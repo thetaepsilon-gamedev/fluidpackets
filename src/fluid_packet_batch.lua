@@ -333,6 +333,14 @@ local run_packet_batch = function(packetmap, packetkeys)
 				i = i + 1
 			end
 		end
+
+		-- if the packet gets completely emptied, remove it.
+		-- this gets rid of unnecessary work,
+		-- as zero sized packets can't affect volumes.
+		-- additionally, it keeps the size of the packet map down.
+		if packet.volume == 0 then
+			packetmap[key] = nil
+		end
 	end
 
 	-- batch processing complete;
