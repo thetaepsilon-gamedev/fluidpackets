@@ -82,6 +82,16 @@ node_def = {
 
 
 
+local ydebug = function(msg)
+	msg = "[fluidpackets] "..msg
+	print(msg)
+	minetest.chat_send_all(msg)
+end
+local ndebug = function() end
+local debug = ndebug
+
+
+
 -- definition lookup as described above.
 -- note, the definition may return nil, especially for ignore nodes.
 local get_node_and_def = function(pos)
@@ -118,11 +128,14 @@ local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local try_insert_volume_mut = function(packetmap, ivolume, tpos)
 	local node, def = get_node_and_def(tpos)
-	if def == nil then return ivolume, "ENONBEARER" end
+	local h = hash(tpos)
+	if def == nil then
+		debug("can't inject "..ivolume.."m³ @"..h..", not a fluid bearer")
+		return ivolume, "ENONBEARER"
+	end
 	local capacity = def.capacity
 	assert(type(capacity) == "number", nocap)
 
-	local h = hash(tpos)
 	local tpacket = packetmap[h]
 	-- if the packet doesn't exist currently, create it.
 	-- here we're allowed to assume tpos is "given" to us, so use that
@@ -132,6 +145,7 @@ local try_insert_volume_mut = function(packetmap, ivolume, tpos)
 		cvolume = 0
 		-- write it back to the map now;
 		-- at this point, we're going to be modifying it anyway
+		debug("a packet came into being @"..h)
 		packetmap[h] = tpacket
 		-- also note shortly we update tpacket.volume
 	else
@@ -313,9 +327,11 @@ local run_packet_batch = function(packetmap, packetkeys)
 	local i = 1
 	for i, key in ipairs(packetkeys) do
 		local packet = packetmap[key]
+		local hash = key
 		local node, def = get_node_and_def(packet)
 		-- packet inside non-bearer? for now, magically vanish it
 		if def == nil then
+			debug("packet @"..hash.." nullified inside a non-bearer")
 			packet.volume = 0
 		else
 			-- try to find appropriate case handler
@@ -324,6 +340,7 @@ local run_packet_batch = function(packetmap, packetkeys)
 				error(badtype)
 			end
 			-- now invoke sub-type handler...
+			debug("packet @"..hash.." inside node of type "..def.type)
 			local runtasks = handle(
 				packetmap, packet, node, def)
 
@@ -342,6 +359,7 @@ local run_packet_batch = function(packetmap, packetkeys)
 		-- as zero sized packets can't affect volumes.
 		-- additionally, it keeps the size of the packet map down.
 		if packet.volume == 0 then
+			debug("packet @"..hash.." reached zero and vanished")
 			packetmap[key] = nil
 		end
 	end
