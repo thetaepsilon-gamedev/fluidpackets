@@ -340,3 +340,7 @@ local run_packet_batch = function(packetmap, packetkeys)
 	run_deferred_tasks(runlater, runlaterpos, i-1)
 end
 
+
+
+return run_packet_batch
+
