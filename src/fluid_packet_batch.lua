@@ -1,3 +1,5 @@
+local subloader = ...
+
 -- things that can happen to a packet:
 -- * packet is in a directed pipe. attempt to shift packet volume.
 -- * packet is in air. drop the packet (as an entity?)
@@ -167,8 +169,9 @@ local vadd = vector.add
 
 
 -- directed pipe: move fluid in appropriate direction, if possible.
+local get_node_offset = subloader("node_def_directed_pipe.lua")
 local run_packet_directed = function(packetmap, packet, node, bearer_def)
-	local offset = get_node_offset(node, bearef_def)
+	local offset = get_node_offset(node, bearer_def)
 	-- remember, packets are valid position tables
 	local target = vadd(packet, offset)
 
