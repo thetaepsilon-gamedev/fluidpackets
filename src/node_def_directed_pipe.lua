@@ -10,7 +10,7 @@ determine the current out-flow direction based on node information/definition.
 -- if it is nil, it is assumed to be a unit upwards vector.
 local default_outdir = vector.new(0, 1, 0)
 local lib = "com.github.thetaepsilon.minetest.libmthelpers"
-local get_rotate = mtrequire(lib..".facedir").optimised_rotations
+local get_rotate = mtrequire(lib..".facedir").get_rotation_function
 local rotate_outdir = function(outdir, param2)
 	-- TODO: some param2 types have other bits stored in this...
 	outdir = outdir or default_outdir
