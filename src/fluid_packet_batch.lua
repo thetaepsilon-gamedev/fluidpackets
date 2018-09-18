@@ -321,7 +321,19 @@ local bearer_type = {
 	device = run_packet_device,
 }
 local vnew = vector.new
-local run_packet_batch = function(packetmap, packetkeys)
+
+-- callback defaults setup for various actions when handling packets
+local null = _mod.util.callbacks.dummies.null
+local defcallbacks = {
+	-- invoked when a packet ends up inside an inappropriate block.
+	-- packet will be destroyed upon return.
+	-- default: do nothing extra
+	on_packet_destroyed = null,
+}
+local l = "run_packet_batch()"
+local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
+local run_packet_batch = function(packetmap, packetkeys, callbacks)
+	local c = callbacks_(callbacks)
 	local runlater = {}
 	local runlaterpos = {}
 	local i = 1
@@ -332,6 +344,7 @@ local run_packet_batch = function(packetmap, packetkeys)
 		-- packet inside non-bearer? for now, magically vanish it
 		if def == nil then
 			debug("packet @"..hash.." nullified inside a non-bearer")
+			c("on_packet_destroyed", packet, hash)
 			packet.volume = 0
 		else
 			-- try to find appropriate case handler
