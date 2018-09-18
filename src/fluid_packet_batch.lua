@@ -126,7 +126,7 @@ end
 -- typically the input volume, so simple code can just treat it as a full cond.
 local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
-local try_insert_volume_mut = function(packetmap, ivolume, tpos)
+local try_insert_volume_mut = function(packetmap, ivolume, tpos, callback)
 	local node, def = get_node_and_def(tpos)
 	local h = hash(tpos)
 	if def == nil then
@@ -184,14 +184,16 @@ local vadd = vector.add
 
 -- directed pipe: move fluid in appropriate direction, if possible.
 local get_node_offset = subloader("node_def_directed_pipe.lua")
-local run_packet_directed = function(packetmap, packet, node, bearer_def)
+local run_packet_directed = function(packetmap, packet, node, bearer_def, callback)
 	local offset = get_node_offset(node, bearer_def)
 	-- remember, packets are valid position tables
 	local target = vadd(packet, offset)
 
 	-- try_insert_volume_mut handles air among other things.
 	-- note: the "target" vector is assumed possibly consumed by this!
-	local remainder = try_insert_volume_mut(packetmap, packet.volume, target)
+	local remainder =
+		try_insert_volume_mut(
+			packetmap, packet.volume, target, callback)
 	-- run_packet_batch will remove any packets that end up with zero volume.
 	packet.volume = remainder
 
@@ -240,7 +242,7 @@ local checkv = function(o)
 	assert(valid, "offset vector must be non-zero"..youpleb)
 end
 local neg = "inject_packet() was called with a non-positive volume"..youpleb
-local mk_inject_packet_ = function(packetmap, basepos)
+local mk_inject_packet_ = function(packetmap, basepos, callback)
 	return function(volume, offset)
 		assert(volume > 0, neg)
 		-- in order to maintain proper hashing,
@@ -248,13 +250,13 @@ local mk_inject_packet_ = function(packetmap, basepos)
 		-- also, least one component must be non-zero.
 		checkv(offset)
 		local target = vadd(basepos, offset)
-		return try_insert_volume_mut(packetmap, volume, target)
+		return try_insert_volume_mut(packetmap, volume, target, callback)
 	end
 end
 
-local run_packet_device = function(packetmap, packet, node, bearer_def)
+local run_packet_device = function(packetmap, packet, node, bearer_def, callback)
 	-- set up the packet injector for this callback
-	local inject = mk_inject_packet_(packetmap, packet)
+	local inject = mk_inject_packet_(packetmap, packet, callback)
 
 	-- prepare other initial data for the callback.
 	-- note volume is enforced by previous steps moving into the ingress buffer,
@@ -355,7 +357,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 			-- now invoke sub-type handler...
 			debug("packet @"..hash.." inside node of type "..def.type)
 			local runtasks = handle(
-				packetmap, packet, node, def)
+				packetmap, packet, node, def, c)
 
 			-- ... and save any run-later tasks for later, if any,
 			-- noting the position they should be run with.
