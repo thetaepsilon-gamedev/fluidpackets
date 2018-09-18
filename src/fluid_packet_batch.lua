@@ -368,7 +368,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 		-- packet inside non-bearer? for now, magically vanish it
 		if def == nil then
 			debug("packet @"..hash.." nullified inside a non-bearer")
-			c("on_packet_destroyed", packet, hash)
+			c("on_packet_destroyed", packet, hash, node)
 			packet.volume = 0
 		else
 			-- try to find appropriate case handler
