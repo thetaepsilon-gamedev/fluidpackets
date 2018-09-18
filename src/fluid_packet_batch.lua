@@ -126,13 +126,28 @@ end
 -- typically the input volume, so simple code can just treat it as a full cond.
 local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
+local min = math.min
 local try_insert_volume_mut = function(packetmap, ivolume, tpos, callback)
 	local node, def = get_node_and_def(tpos)
 	local h = hash(tpos)
 	if def == nil then
-		debug("can't inject "..ivolume.."m³ @"..h..", not a fluid bearer")
-		return ivolume, "ENONBEARER"
+		-- check if a callback can handle this situation;
+		-- e.g. by allowing fluids to escape into air somehow.
+		-- the callback may either indicate a remaining amount, or nil.
+		-- nil indicates "can't handle", fall back to error status.
+		local r = callback("on_escape", tpos, node, ivolume)
+		if r == nil then
+			debug("can't inject "..ivolume.."m³ @"..h..", not a fluid bearer")
+			return ivolume, "ENONBEARER"
+		else
+			-- ensure the callback can't increase the volume.
+			r = min(ivolume, r)
+			debug("on_escape handled, remainder "..r)
+			return r, ""
+		end
 	end
+
+	-- otherwise, try to insert volume into pipe device.
 	local capacity = def.capacity
 	assert(type(capacity) == "number", nocap)
 
@@ -326,11 +341,18 @@ local vnew = vector.new
 
 -- callback defaults setup for various actions when handling packets
 local null = _mod.util.callbacks.dummies.null
+local const = _mod.util.callbacks.dummies.const_
 local defcallbacks = {
 	-- invoked when a packet ends up inside an inappropriate block.
 	-- packet will be destroyed upon return.
 	-- default: do nothing extra
 	on_packet_destroyed = null,
+	-- invoked to handle condition of attempting to insert volume
+	-- into a node that isn't a bearer.
+	-- passed target position, node, and would-be inserted volume;
+	-- returns either a remainder of the consumed volume,
+	-- or nil to indicate it couldn't be handled.
+	on_escape = const(nil),
 }
 local l = "run_packet_batch()"
 local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
