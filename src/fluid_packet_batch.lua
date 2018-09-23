@@ -364,7 +364,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 	for i, key in ipairs(packetkeys) do
 		local packet = packetmap[key]
 		local hash = key
-		local node, def = get_node_and_def(packet, callback)
+		local node, def = get_node_and_def(packet, c)
 		-- packet inside non-bearer? for now, magically vanish it
 		if def == nil then
 			debug("packet @"..hash.." nullified inside a non-bearer")
