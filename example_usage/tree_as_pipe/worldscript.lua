@@ -63,9 +63,14 @@ local escape = function(pos, node, volume)
 	prn("# packet escaped @"..hash.." volume "..v.."m³")
 	return shove_bubble_at(pos, node, v)
 end
+local lookup = function(name)
+	local def = minetest.registered_nodes[name]
+	return def and def.fluidpackets
+end
 local callbacks = {
 	on_packet_destroyed = destroy,
 	on_escape = escape,
+	lookup_definition = lookup,
 }
 
 

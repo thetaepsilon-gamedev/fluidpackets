@@ -96,10 +96,13 @@ local debug = ndebug
 -- note, the definition may return nil, especially for ignore nodes.
 local get_node_and_def = function(pos, callback)
 	local node = minetest.get_node(pos)
-	local def = minetest.registered_nodes[node.name]
+	local def = callback("lookup_definition", node.name)
+	if def ~= nil then
+		-- we're expected a table in the form as "fluidpackets" above
+		assert(type(def) == "table")
+	end
 
-	-- XXX: I still don't know what to do for multiple fluid types yet...
-	return node, def.fluidpackets
+	return node, def
 end
 
 -- node position hashing in packet map
@@ -353,6 +356,11 @@ local defcallbacks = {
 	-- returns either a remainder of the consumed volume,
 	-- or nil to indicate it couldn't be handled.
 	on_escape = const(nil),
+
+	-- called to retrieve the pipe definition of a given node, if any.
+	-- this is used to allow change in definition format,
+	-- including possible support for multiple liquid types in future.
+	lookup_definition = nil,
 }
 local l = "run_packet_batch()"
 local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
