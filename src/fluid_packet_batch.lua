@@ -94,7 +94,7 @@ local debug = ndebug
 
 -- definition lookup as described above.
 -- note, the definition may return nil, especially for ignore nodes.
-local get_node_and_def = function(pos)
+local get_node_and_def = function(pos, callback)
 	local node = minetest.get_node(pos)
 	local def = minetest.registered_nodes[node.name]
 
@@ -128,7 +128,7 @@ local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
 local try_insert_volume_mut = function(packetmap, ivolume, tpos, callback)
-	local node, def = get_node_and_def(tpos)
+	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
 	if def == nil then
 		-- check if a callback can handle this situation;
@@ -364,7 +364,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 	for i, key in ipairs(packetkeys) do
 		local packet = packetmap[key]
 		local hash = key
-		local node, def = get_node_and_def(packet)
+		local node, def = get_node_and_def(packet, callback)
 		-- packet inside non-bearer? for now, magically vanish it
 		if def == nil then
 			debug("packet @"..hash.." nullified inside a non-bearer")
