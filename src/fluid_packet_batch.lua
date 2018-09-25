@@ -300,10 +300,11 @@ local badtask2 =
 -- dispatch a runlater tasks list.
 -- tasks which want to modify the world must be deferred until after a batch,
 -- in order to prevent the kinds of problems discussed for run_packet_batch().
-local run_deferred_tasks = function(tasks, positions, length)
+local run_deferred_tasks = function(tasks, length)
 	for i = 1, length, 1 do
-		local task = tasks[i]
-		local pos = positions[i]
+		-- tasks are stored inside the position table below
+		local pos = tasks[i]
+		local task = pos.tasks
 		-- doubles up as a rudimentary tostring for positions...
 		local ptrace = " @"hash(pos)
 
@@ -367,7 +368,6 @@ local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
 local run_packet_batch = function(packetmap, packetkeys, callbacks)
 	local c = callbacks_(callbacks)
 	local runlater = {}
-	local runlaterpos = {}
 	local i = 1
 	for i, key in ipairs(packetkeys) do
 		local packet = packetmap[key]
@@ -392,9 +392,11 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 			-- ... and save any run-later tasks for later, if any,
 			-- noting the position they should be run with.
 			if runtasks then
-				runlater[i] = runtasks
 				-- defensive copy so packet volume can't be interfered with...
-				runlaterpos[i] = vnew(packet)
+				local pos = vnew(packet)
+				-- stuff the tasks in there to save needing two separate lists.
+				pos.tasks = runtasks
+				runlater[i] = pos
 				i = i + 1
 			end
 		end
@@ -411,7 +413,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 
 	-- batch processing complete;
 	-- take care of any runlater tasks now
-	run_deferred_tasks(runlater, runlaterpos, i-1)
+	run_deferred_tasks(runlater, i-1)
 end
 
 
