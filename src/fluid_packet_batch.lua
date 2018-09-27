@@ -371,6 +371,23 @@ end
 
 
 
+-- handle deleting a packet when it is either suspended or volume set to zero.
+-- this gets rid of unnecessary work,
+-- as zero sized packets can't affect volumes.
+-- additionally, it keeps the size of the packet map down.
+local handle_delete = function(packet, key, packetmap)
+	local hash = key
+	-- delete if the volume shrinks to zero.
+	if packet.volume == 0 then
+		debug("packet @"..hash.." reached zero and vanished")
+		packetmap[key] = nil
+	end
+end
+
+
+
+
+
 -- and now, the main batch running routine.
 -- this is provided a list of hashed keys which should be processed;
 -- this is fixed at the beginning of the batch instead of using pairs().
@@ -420,14 +437,9 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 				packet, hash, node, def, packetmap, c, enqueue)
 		end
 
-		-- if the packet gets completely emptied, remove it.
-		-- this gets rid of unnecessary work,
-		-- as zero sized packets can't affect volumes.
-		-- additionally, it keeps the size of the packet map down.
-		if packet.volume == 0 then
-			debug("packet @"..hash.." reached zero and vanished")
-			packetmap[key] = nil
-		end
+		-- handle potentially deleting the packet when done,
+		-- for e.g. no volume left
+		handle_delete(packet, key, packetmap)
 	end
 
 	-- batch processing complete;
