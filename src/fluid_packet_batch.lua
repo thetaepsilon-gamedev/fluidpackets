@@ -377,10 +377,14 @@ end
 -- additionally, it keeps the size of the packet map down.
 local handle_delete = function(packet, key, packetmap)
 	local hash = key
+	local delete = function(reason)
+		debug("packet @"..hash.." "..reason)
+		packetmap[key] = nil
+	end
+
 	-- delete if the volume shrinks to zero.
 	if packet.volume == 0 then
-		debug("packet @"..hash.." reached zero and vanished")
-		packetmap[key] = nil
+		delete("reached zero and vanished")
 	end
 end
 
