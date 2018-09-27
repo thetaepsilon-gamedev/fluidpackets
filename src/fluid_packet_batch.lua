@@ -82,6 +82,9 @@ node_def = {
 
 
 
+local lib = "com.github.thetaepsilon.minetest.libmthelpers"
+local newstack = mtrequire(lib..".datastructs.stack").new
+
 local ydebug = function(msg)
 	msg = "[fluidpackets] "..msg
 	print(msg)
@@ -300,10 +303,9 @@ local badtask2 =
 -- dispatch a runlater tasks list.
 -- tasks which want to modify the world must be deferred until after a batch,
 -- in order to prevent the kinds of problems discussed for run_packet_batch().
-local run_deferred_tasks = function(tasks, length)
-	for i = 1, length, 1 do
+local run_deferred_tasks = function(taskstack)
+	for i, pos in taskstack.ipairs() do
 		-- tasks are stored inside the position table below
-		local pos = tasks[i]
 		local task = pos.tasks
 		-- doubles up as a rudimentary tostring for positions...
 		local ptrace = " @"hash(pos)
@@ -367,8 +369,9 @@ local l = "run_packet_batch()"
 local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
 local run_packet_batch = function(packetmap, packetkeys, callbacks)
 	local c = callbacks_(callbacks)
-	local runlater = {}
-	local i = 1
+	local runlater = newstack()
+	local enqueue = runlater.push
+
 	for i, key in ipairs(packetkeys) do
 		local packet = packetmap[key]
 		local hash = key
@@ -396,8 +399,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 				local pos = vnew(packet)
 				-- stuff the tasks in there to save needing two separate lists.
 				pos.tasks = runtasks
-				runlater[i] = pos
-				i = i + 1
+				enqueue(pos)
 			end
 		end
 
@@ -413,7 +415,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 
 	-- batch processing complete;
 	-- take care of any runlater tasks now
-	run_deferred_tasks(runlater, i-1)
+	run_deferred_tasks(runlater)
 end
 
 
