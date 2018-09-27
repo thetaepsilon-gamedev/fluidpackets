@@ -98,7 +98,10 @@ local debug = ndebug
 -- definition lookup as described above.
 -- note, the definition may return nil, especially for ignore nodes.
 local get_node_and_def = function(pos, callback)
-	local node = minetest.get_node(pos)
+	local node = minetest.get_node_or_nil(pos)
+	-- no point trying to load definition for unloaded areas...
+	if not node then return nil, nil end
+
 	local def = callback("lookup_definition", node.name)
 	if def ~= nil then
 		-- we're expected a table in the form as "fluidpackets" above
@@ -136,7 +139,11 @@ local min = math.min
 local try_insert_volume_mut = function(packetmap, ivolume, tpos, callback)
 	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
-	if def == nil then
+
+	if node == nil then
+		-- unloaded area? we definitely cannot do anything here at all
+		return ivolume, "ENONBEARER"
+	elseif def == nil then
 		-- check if a callback can handle this situation;
 		-- e.g. by allowing fluids to escape into air somehow.
 		-- the callback may either indicate a remaining amount, or nil.
@@ -382,6 +389,13 @@ local handle_delete = function(packet, key, packetmap)
 		packetmap[key] = nil
 	end
 
+	-- if the packet was explicitly set to nil,
+	-- it was "detached" and we can no longer touch it.
+	if packet == nil then
+		delete("packet was marked suspended, removing from map")
+		return
+	end
+
 	-- delete if the volume shrinks to zero.
 	if packet.volume == 0 then
 		delete("reached zero and vanished")
@@ -431,8 +445,15 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 		local packet = packetmap[key]
 		local hash = key
 		local node, def = get_node_and_def(packet, c)
-		-- packet inside non-bearer? for now, magically vanish it
-		if def == nil then
+
+		if node == nil then
+			-- packet is inside unloaded area?
+			-- TODO callback for suspending a packet,
+			-- for now just destroy the packet.
+			debug("packet @"..hash.." fell out of the world")
+			-- mark the packet "detached"
+			packet = nil
+		elseif def == nil then
 			debug("packet @"..hash.." nullified inside a non-bearer")
 			c("on_packet_destroyed", packet, hash, node)
 			packet.volume = 0
