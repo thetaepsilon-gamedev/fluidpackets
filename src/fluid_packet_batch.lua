@@ -332,18 +332,52 @@ end
 
 
 
+
+
+-- handle a single packet when it's starting block is known to be a bearer.
+local bearer_type = {
+	pipe = run_packet_directed,
+	device = run_packet_device,
+}
+local vnew = vector.new
+local badtype = "unknown node_def.fluidpackets.type enum"..defpleb
+local handle_single_packet =
+	function(packet, hash, node, def, packetmap, c, enqueue)
+		-- argh, double indent
+
+		-- try to find approprioate sub-handler for the bearer type.
+		local handle = bearer_type[def.type]
+		if not handle then
+			error(badtype)
+		end
+		-- now invoke sub-type handler...
+		debug("packet @"..hash.." inside node of type "..def.type)
+		local runtasks = handle(
+			packetmap, packet, node, def, c)
+
+		-- ... and save any run-later tasks for later, if any,
+		-- noting the position they should be run with.
+		if runtasks then
+			-- defensive copy so packet volume can't be interfered with...
+			local pos = vnew(packet)
+			-- stuff the tasks in there to save needing two separate lists.
+			pos.tasks = runtasks
+			enqueue(pos)
+		end
+	-- end RIP indent
+end
+
+
+
+
+
 -- and now, the main batch running routine.
 -- this is provided a list of hashed keys which should be processed;
 -- this is fixed at the beginning of the batch instead of using pairs().
 -- the reason for this is a) concurrent inserts during pairs() isn't allowed,
 -- and b) it prevents a potential instant movement problem;
 -- packets created at previously empty positions must wait until the next turn.
-local badtype = "unknown node_def.fluidpackets.type enum"..defpleb
-local bearer_type = {
-	pipe = run_packet_directed,
-	device = run_packet_device,
-}
-local vnew = vector.new
+
 
 -- callback defaults setup for various actions when handling packets
 local null = _mod.util.callbacks.dummies.null
@@ -382,25 +416,8 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 			c("on_packet_destroyed", packet, hash, node)
 			packet.volume = 0
 		else
-			-- try to find appropriate case handler
-			local handle = bearer_type[def.type]
-			if not handle then
-				error(badtype)
-			end
-			-- now invoke sub-type handler...
-			debug("packet @"..hash.." inside node of type "..def.type)
-			local runtasks = handle(
-				packetmap, packet, node, def, c)
-
-			-- ... and save any run-later tasks for later, if any,
-			-- noting the position they should be run with.
-			if runtasks then
-				-- defensive copy so packet volume can't be interfered with...
-				local pos = vnew(packet)
-				-- stuff the tasks in there to save needing two separate lists.
-				pos.tasks = runtasks
-				enqueue(pos)
-			end
+			handle_single_packet(
+				packet, hash, node, def, packetmap, c, enqueue)
 		end
 
 		-- if the packet gets completely emptied, remove it.
