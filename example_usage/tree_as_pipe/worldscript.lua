@@ -67,10 +67,17 @@ local lookup = function(name)
 	local def = minetest.registered_nodes[name]
 	return def and def.fluidpackets
 end
+local del = " fell out of the loaded world, deleting"
+local unload = function(packet, hash)
+	prn("# packet @"..hash.." volume "..packet.volume.."m³"..del)
+	return true
+end
+
 local callbacks = {
 	on_packet_destroyed = destroy,
 	on_escape = escape,
 	lookup_definition = lookup,
+	on_packet_unloaded = unload,
 }
 
 

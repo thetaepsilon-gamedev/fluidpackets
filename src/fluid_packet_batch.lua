@@ -382,12 +382,18 @@ end
 -- if this returns nil, the packet is to be "detached"
 -- from the packet map and forgotten about -
 -- this may be because the packet has been consumed by a callback.
-local handle_suspend = function(packet, hash)
-	-- TODO callback for suspending a packet,
-	-- for now just destroy the packet.
+local handle_suspend = function(packet, hash, c)
 	debug("packet @"..hash.." fell out of the world")
-	-- mark the packet "detached"
-	return nil
+	-- try to see if a callback wants to handle this case.
+	if c("on_packet_unloaded", packet, hash) then
+		-- if it said it could handle it, then detach it;
+		-- otherwise leave it be.
+		-- this allows the callback to "consume" the packet,
+		-- and store it elsewhere having the sole ref. to it.
+		packet = nil
+	end
+
+	return packet
 end
 
 
@@ -450,6 +456,15 @@ local defcallbacks = {
 	-- this is used to allow change in definition format,
 	-- including possible support for multiple liquid types in future.
 	lookup_definition = nil,
+
+	-- called when a packet is found in an unloaded area:
+	-- provided packet and hash.
+	-- the callback returns a truth value indicating whether it handled this;
+	-- if and only if this is true, the callback may "consume" the packet,
+	-- as it will be detached from the packet map.
+	-- a false value will leave the packet where it is, unable to move.
+	-- the default is to do nothing and leave the packet alone.
+	on_packet_unloaded = const(false),
 }
 local l = "run_packet_batch()"
 local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
@@ -465,7 +480,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 
 		if node == nil then
 			-- packet is inside unloaded area?
-			packet = handle_suspend(packet, hash)
+			packet = handle_suspend(packet, hash, c)
 		elseif def == nil then
 			debug("packet @"..hash.." nullified inside a non-bearer")
 			c("on_packet_destroyed", packet, hash, node)
