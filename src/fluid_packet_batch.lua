@@ -378,6 +378,23 @@ end
 
 
 
+-- handle the case of suspending a packet if it goes out of the loaded world.
+-- if this returns nil, the packet is to be "detached"
+-- from the packet map and forgotten about -
+-- this may be because the packet has been consumed by a callback.
+local handle_suspend = function(packet, hash)
+	-- TODO callback for suspending a packet,
+	-- for now just destroy the packet.
+	debug("packet @"..hash.." fell out of the world")
+	-- mark the packet "detached"
+	return nil
+end
+
+
+
+
+
+
 -- handle deleting a packet when it is either suspended or volume set to zero.
 -- this gets rid of unnecessary work,
 -- as zero sized packets can't affect volumes.
@@ -448,11 +465,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 
 		if node == nil then
 			-- packet is inside unloaded area?
-			-- TODO callback for suspending a packet,
-			-- for now just destroy the packet.
-			debug("packet @"..hash.." fell out of the world")
-			-- mark the packet "detached"
-			packet = nil
+			packet = handle_suspend(packet, hash)
 		elseif def == nil then
 			debug("packet @"..hash.." nullified inside a non-bearer")
 			c("on_packet_destroyed", packet, hash, node)
