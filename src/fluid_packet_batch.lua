@@ -93,6 +93,8 @@ end
 local ndebug = function() end
 local debug = ndebug
 
+local i = {}
+
 
 
 -- definition lookup as described above.
@@ -498,8 +500,9 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 	-- take care of any runlater tasks now
 	run_deferred_tasks(runlater)
 end
+i.run_packet_batch = run_packet_batch
 
 
 
-return run_packet_batch
+return i
 
