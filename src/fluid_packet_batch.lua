@@ -136,6 +136,7 @@ end
 local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
+local vnew = vector.new
 local try_insert_volume_mut = function(packetmap, ivolume, tpos, callback)
 	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
@@ -166,10 +167,9 @@ local try_insert_volume_mut = function(packetmap, ivolume, tpos, callback)
 
 	local tpacket = packetmap[h]
 	-- if the packet doesn't exist currently, create it.
-	-- here we're allowed to assume tpos is "given" to us, so use that
 	local cvolume
 	if tpacket == nil then
-		tpacket = tpos
+		tpacket = vnew(tpos)
 		cvolume = 0
 		-- write it back to the map now;
 		-- at this point, we're going to be modifying it anyway
@@ -346,7 +346,6 @@ local bearer_type = {
 	pipe = run_packet_directed,
 	device = run_packet_device,
 }
-local vnew = vector.new
 local badtype = "unknown node_def.fluidpackets.type enum"..defpleb
 local handle_single_packet =
 	function(packet, hash, node, def, packetmap, c, enqueue)
