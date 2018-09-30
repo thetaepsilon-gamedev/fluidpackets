@@ -205,6 +205,7 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback)
 
 	return remainder, status
 end
+i.try_insert_volume = try_insert_volume
 
 
 
