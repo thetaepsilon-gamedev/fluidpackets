@@ -137,7 +137,7 @@ local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
 local vnew = vector.new
-local try_insert_volume_mut = function(packetmap, ivolume, tpos, callback)
+local try_insert_volume = function(packetmap, ivolume, tpos, callback)
 	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
 
@@ -217,10 +217,10 @@ local run_packet_directed = function(packetmap, packet, node, bearer_def, callba
 	-- remember, packets are valid position tables
 	local target = vadd(packet, offset)
 
-	-- try_insert_volume_mut handles air among other things.
+	-- try_insert_volume handles air among other things.
 	-- note: the "target" vector is assumed possibly consumed by this!
 	local remainder =
-		try_insert_volume_mut(
+		try_insert_volume(
 			packetmap, packet.volume, target, callback)
 	-- run_packet_batch will remove any packets that end up with zero volume.
 	packet.volume = remainder
@@ -278,7 +278,7 @@ local mk_inject_packet_ = function(packetmap, basepos, callback)
 		-- also, least one component must be non-zero.
 		checkv(offset)
 		local target = vadd(basepos, offset)
-		return try_insert_volume_mut(packetmap, volume, target, callback)
+		return try_insert_volume(packetmap, volume, target, callback)
 	end
 end
 
