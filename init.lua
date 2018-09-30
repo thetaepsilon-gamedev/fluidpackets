@@ -25,7 +25,5 @@ _mod.m.batch = m_batch
 local export = subloader("setup_interface.lua")
 modtable_register("ds2.minetest.fluidpackets", export)
 
-run_packet_batch = m_batch.run_packet_batch
-
 _mod = nil
 
