@@ -82,6 +82,9 @@ local callbacks = {
 
 
 
+local fluidpackets = modtable("ds2.minetest.fluidpackets")
+local run_packet_batch = fluidpackets.run_packet_batch
+
 -- just run all present keys, for now...
 local run_all = function(packetmap)
 	local index = 0
