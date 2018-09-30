@@ -17,6 +17,8 @@ end
 _mod.util = {}
 _mod.util.callbacks = subloader("callback_util.lua")
 local m_batch = subloader("fluid_packet_batch.lua")
+_mod.m = {}
+_mod.m.batch = m_batch
 run_packet_batch = m_batch.run_packet_batch
 
 _mod = nil
