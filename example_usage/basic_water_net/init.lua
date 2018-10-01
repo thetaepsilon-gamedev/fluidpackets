@@ -12,6 +12,11 @@ local mp = minetest.get_modpath(mn).."/"
 _mod.modpath = mp
 dofile(mp.."nodes.lua")
 
+local controller = dofile(mp.."water_map.lua")
+_mod.controller = controller
+dofile(mp.."globalstep.lua")
+water_net_insert = controller.insert
+
 
 _mod = nil
 
