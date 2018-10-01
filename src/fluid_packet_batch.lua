@@ -34,13 +34,9 @@ local subloader = ...
 
 
 -- bearer_def mentioned below is a sub-table of node definition tables.
--- bearer_def is the value of node_def.fluidpackets in this structure:
+-- it's position in a node defintion is described in fluid_bearer_def_util.lua
 --[[
-node_def = {
-	description = "...",	-- MT node def keys for other things as usual
-	...,
-	fluidpackets = {
-		-- TODO: multiple fluid possibilities?
+	bearer_def = {
 		type = "...",	-- enum fluid_bearer_type
 		ingress = func,	-- type == "device": ingress handler.
 			-- read below for how this must work
@@ -76,8 +72,6 @@ node_def = {
 			-- if missing, assumed to be straight up (pre-rotation),
 			-- such that the direction corresponds to facedir placement.
 	}
-	...,
-}
 ]]
 
 
