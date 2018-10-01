@@ -20,6 +20,7 @@ local m_batch = subloader("fluid_packet_batch.lua")
 _mod.m = {}
 _mod.m.batch = m_batch
 _mod.m.controller = subloader("fluid_map_controller.lua")
+_mod.util.bearer_def = subloader("fluid_bearer_def_util.lua")
 
 
 

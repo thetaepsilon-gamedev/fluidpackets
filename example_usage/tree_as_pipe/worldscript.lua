@@ -4,6 +4,7 @@
 -- https://github.com/thetaepsilon-gamedev/mt_devitems_modpack
 -- to try this out, make a "pipe" out of trees as they face towards you,
 -- making sure to start at 0, 8, 0 as below.
+local fluidpackets = modtable("ds2.minetest.fluidpackets")
 
 
 
@@ -19,11 +20,14 @@ local targetname = "default:tree"
 --minetest.set_node(pos, {name=targetname, param2=0})
 
 -- definition hacky hacky...
+local water = "default_water"
 local insert = {
 	fluidpackets = {
-		type = "pipe",
-		dirtype = "facedir_simple",
-		capacity = 1.0,
+		[water] = {
+			type = "pipe",
+			dirtype = "facedir_simple",
+			capacity = 1.0,
+		}
 	},
 }
 minetest.override_item(targetname, insert)
@@ -63,15 +67,17 @@ local escape = function(pos, node, volume)
 	prn("# packet escaped @"..hash.." volume "..v.."m³")
 	return shove_bubble_at(pos, node, v)
 end
-local lookup = function(name)
-	local def = minetest.registered_nodes[name]
-	return def and def.fluidpackets
-end
+local lookup = fluidpackets.util.bearer_def.mk_liquid_lookup(water)
+
 local del = " fell out of the loaded world, deleting"
 local unload = function(packet, hash)
 	prn("# packet @"..hash.." volume "..packet.volume.."m³"..del)
 	return true
 end
+
+
+
+
 
 local callbacks = {
 	on_packet_destroyed = destroy,
@@ -82,7 +88,8 @@ local callbacks = {
 
 
 
-local fluidpackets = modtable("ds2.minetest.fluidpackets")
+
+
 local run_packet_batch = fluidpackets.run_packet_batch
 
 -- just run all present keys, for now...
