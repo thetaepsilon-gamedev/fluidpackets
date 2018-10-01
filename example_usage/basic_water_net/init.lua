@@ -15,7 +15,8 @@ dofile(mp.."nodes.lua")
 local controller = dofile(mp.."water_map.lua")
 _mod.controller = controller
 dofile(mp.."globalstep.lua")
-water_net_insert = controller.insert
+dofile(mp.."inserter_item.lua")
+
 
 
 _mod = nil
