@@ -235,8 +235,14 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback)
 
 	return remainder, status
 end
+
+-- we have to wrap the callbacks up into function form to call the above;
+-- if entered via run_packet_batch(), that function takes care of this.
+local l = "run_packet_batch()"
+local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
 local try_insert_volume_ext = function(packetmap, ivolume, tpos, callback)
-	return try_insert_volume(packetmap, ivolume, tpos, callback)
+	local c = callbacks_(callback)
+	return try_insert_volume(packetmap, ivolume, tpos, c)
 end
 i.try_insert_volume = try_insert_volume_ext
 
