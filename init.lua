@@ -19,6 +19,7 @@ _mod.util.callbacks = subloader("callback_util.lua")
 local m_batch = subloader("fluid_packet_batch.lua")
 _mod.m = {}
 _mod.m.batch = m_batch
+_mod.m.controller = subloader("fluid_map_controller.lua")
 
 
 
