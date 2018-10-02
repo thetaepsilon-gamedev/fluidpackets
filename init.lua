@@ -15,6 +15,7 @@ local function subloader(relpath, ...)
 end
 
 _mod.util = {}
+_mod.util.math = subloader("math_util.lua")
 _mod.util.callbacks = subloader("callback_util.lua")
 local m_batch = subloader("fluid_packet_batch.lua")
 _mod.m = {}

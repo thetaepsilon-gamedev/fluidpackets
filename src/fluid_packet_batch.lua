@@ -324,6 +324,7 @@ local mk_inject_packet_ = function(packetmap, basepos, callback)
 	end
 end
 
+local clamp = _mod.util.math.clamp
 local run_packet_device = function(packetmap, packet, node, bearer_def, callback)
 	-- set up the packet injector for this callback
 	local inject = mk_inject_packet_(packetmap, packet, callback)
