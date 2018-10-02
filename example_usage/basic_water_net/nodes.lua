@@ -28,3 +28,35 @@ minetest.register_node(n, {
 	on_place = minetest.rotate_node,
 })
 
+
+
+
+
+-- a simple device: explodes when water is ingressed into it.
+local t = "waternet_explosive.png"
+local tiles = {t,t,t,t,t,t}
+
+-- chemists, tell me, how violent would 1m^3 of sodium be in water?
+local n = mn..":sodium"
+local explode = function(node, meta, volume, inject)
+	local force = (volume ^ (1/3)) * 2
+	return 0, function(pos)
+		tnt.boom(pos, {radius=force,damage_radius=force})
+	end
+end
+if minetest.global_exists("tnt") then
+	minetest.register_node(n, {
+		description = "Sodium explosive (don't get this wet)",
+		tiles = tiles,
+		groups = groups,
+		sounds = default.node_sound_metal_defaults(),
+		fluidpackets = {
+			[water] = {
+				type = "device",
+				capacity = 2.0,
+				ingress = explode,
+			}
+		},
+	})
+end
+
