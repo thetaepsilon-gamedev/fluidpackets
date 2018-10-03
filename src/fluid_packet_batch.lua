@@ -165,11 +165,12 @@ end
 -- current identifier enums: ENONBEARER, ELIMIT
 -- in the event of failure (apart from ELIMIT), remainder will always be valid,
 -- typically the input volume, so simple code can just treat it as a full cond.
+-- indir is a MT XYZ vector passed to node callbacks for direction checks.
 local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
 local vnew = vector.new
-local try_insert_volume = function(packetmap, ivolume, tpos, callback)
+local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
 
@@ -240,9 +241,9 @@ end
 -- if entered via run_packet_batch(), that function takes care of this.
 local l = "run_packet_batch()"
 local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
-local try_insert_volume_ext = function(packetmap, ivolume, tpos, callback)
+local try_insert_volume_ext = function(packetmap, ivolume, tpos, callback, indir)
 	local c = callbacks_(callback)
-	return try_insert_volume(packetmap, ivolume, tpos, c)
+	return try_insert_volume(packetmap, ivolume, tpos, c, indir)
 end
 i.try_insert_volume = try_insert_volume_ext
 
@@ -263,7 +264,7 @@ local run_packet_directed = function(packetmap, packet, node, bearer_def, callba
 	-- note: the "target" vector is assumed possibly consumed by this!
 	local remainder =
 		try_insert_volume(
-			packetmap, packet.volume, target, callback)
+			packetmap, packet.volume, target, callback, offset)
 	-- run_packet_batch will remove any packets that end up with zero volume.
 	packet.volume = remainder
 
@@ -320,7 +321,7 @@ local mk_inject_packet_ = function(packetmap, basepos, callback)
 		-- also, least one component must be non-zero.
 		checkv(offset)
 		local target = vadd(basepos, offset)
-		return try_insert_volume(packetmap, volume, target, callback)
+		return try_insert_volume(packetmap, volume, target, callback, offset)
 	end
 end
 

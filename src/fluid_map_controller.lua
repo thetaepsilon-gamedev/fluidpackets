@@ -49,8 +49,8 @@ local construct = function(callbacks)
 		local packetkeys = get_key_list(packetmap)
 		run_packet_batch(packetmap, packetkeys, callbacks)
 	end
-	i.insert = function(tpos, ivolume)
-		try_insert_volume(packetmap, ivolume, tpos, callbacks)
+	i.insert = function(tpos, ivolume, indir)
+		try_insert_volume(packetmap, ivolume, tpos, callbacks, indir)
 	end
 	i.iterate = function()
 		return pairs_noref(packetmap)
