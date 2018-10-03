@@ -52,16 +52,6 @@ local subloader = ...
 			-- XXX: variable capacity dependent on node props,
 			-- e.g. machine upgrades?
 
-		fixeddir = {
-			-- this table expected for dirtype == "fixed".
-			input = function(vector) end,
-				-- pure function which must answer a boolean,
-				-- for a given input vector going into the node.
-				-- true/false for "can fluid enter this way"?
-			output = xyz,
-				-- the one-way output port
-		}
-
 		outdir = xyz,
 			-- used if dirtype == "facedir_simple".
 			-- outgoing offset vector of fluid direction,
