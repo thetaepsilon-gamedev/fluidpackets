@@ -12,6 +12,7 @@ local groups = {
 	cracky = 2,
 }
 
+local capacity = 0.5
 minetest.register_node(n, {
 	description = "Basic test pipe",
 	tiles = tiles,
@@ -19,7 +20,7 @@ minetest.register_node(n, {
 		[water] = {
 			type = "pipe",
 			dirtype = "facedir_simple",
-			capacity = 0.5,
+			capacity = capacity,
 		}
 	},
 	paramtype2 = "facedir",
@@ -59,4 +60,43 @@ if minetest.global_exists("tnt") then
 		},
 	})
 end
+
+
+
+-- only accept input on left and right sides.
+local tp = "waternet_merge_pipe_"
+local vec3 = vector.new
+local sides = {
+	vec3(1,  0,  0),
+	vec3(-1, 0,  0),
+}
+local output = "waternet_simple_pipe_top.png"
+local top = output
+local si = "waternet_input.png"
+local sb = tp.."directions.png"
+local blank = "waternet_blank.png"
+local n = mn..":merge_junction"
+local tiles = {top,blank,si,si,sb,sb}
+
+local fluidpackets = modtable("ds2.minetest.fluidpackets")
+local create_rotating_indir = fluidpackets.util.bearer_helpers.create_rotating_indir
+local indir = create_rotating_indir(sides)
+
+minetest.register_node(n, {
+	description = "Input merge pipe",
+	tiles = tiles,
+	fluidpackets = {
+		[water] = {
+			type = "pipe",
+			capacity = capacity,
+			dirtype = "facedir_simple",
+			indir = indir,
+		},
+	},
+	paramtype2 = "facedir",
+	groups = groups,
+	sounds = default.node_sound_metal_defaults(),
+	on_place = minetest.rotate_node,
+})
+
 
