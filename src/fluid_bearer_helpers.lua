@@ -14,7 +14,7 @@ local lib = "com.github.thetaepsilon.minetest.libmthelpers"
 -- so it is advised not to make this list too long!
 local mk_vector_set = mtrequire(lib..".facedir").mk_rotated_vector_set
 local label = "create_rotating_indir callback"
-local mod = math.mod
+local mod = math.fmod
 local veq = vector.equals
 local create_rotating_indir = function(input_list)
 	local sets = {}
