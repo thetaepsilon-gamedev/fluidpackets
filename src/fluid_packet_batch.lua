@@ -61,6 +61,14 @@ local subloader = ...
 			-- TODO: stripping param2 of colour bits if needed...
 			-- if missing, assumed to be straight up (pre-rotation),
 			-- such that the direction corresponds to facedir placement.
+
+		indir = function(node, meta, indir) end,
+			-- for any bearer type, checks if a given direction
+			-- is allowed for input into this node.
+			-- note that this vector points inwards towards the node.
+			-- must return a boolean value indicating yes/no.
+			-- if this function is absent, true is always assumed,
+			-- effectively meaning any direction is allowed.
 	}
 ]]
 
@@ -152,7 +160,7 @@ end
 -- * remaining volume.
 -- * a string identifier of the reason for any failure,
 --	e.g. ENONBEARER if the target node wasn't a fluid bearer.
--- current identifier enums: ENONBEARER, ELIMIT
+-- current identifier enums: ENONBEARER, ELIMIT, EWRONGSIDE
 -- in the event of failure (apart from ELIMIT), remainder will always be valid,
 -- typically the input volume, so simple code can just treat it as a full cond.
 -- indir is a MT XYZ vector passed to node callbacks for direction checks.
@@ -160,6 +168,7 @@ local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
 local vnew = vector.new
+local can_go_in = _mod.m.inputcheck.can_go_in
 local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
@@ -183,6 +192,15 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 			return r, ""
 		end
 	end
+
+	-- check acceptance of fluid on this side;
+	-- if not, don't do anything.
+	if not can_go_in(tpos, node, def, indir) then
+		return ivolume, "EWRONGSIDE"
+	end
+	-- NB: at this point, node and indir should be considered consumed
+	node = nil
+	indir = nil
 
 	-- otherwise, try to insert volume into pipe device.
 	local capacity = def.capacity
