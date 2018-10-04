@@ -16,9 +16,9 @@ end
 
 local getmeta = _mod.util.metatoken.get_meta_ref_token
 local can_go_in = function(tpos, node, bearer_def, indir)
-	local indir = bearer_def.indir
-	if f == nil then return true end
-	local r = f(node, getmeta(tpos), indir)
+	local indir_f = bearer_def.indir
+	if indir_f == nil then return true end
+	local r = indir_f(node, getmeta(tpos), indir)
 	local accept = assertbool(r)
 	return accept
 end
