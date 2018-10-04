@@ -316,6 +316,7 @@ local mk_inject_packet_ = function(packetmap, basepos, callback)
 end
 
 local clamp = _mod.util.math.clamp
+local getmeta = _mod.util.metatoken.get_meta_ref_token
 local run_packet_device = function(packetmap, packet, node, bearer_def, callback)
 	-- set up the packet injector for this callback
 	local inject = mk_inject_packet_(packetmap, packet, callback)
@@ -324,7 +325,7 @@ local run_packet_device = function(packetmap, packet, node, bearer_def, callback
 	-- note volume is enforced by previous steps moving into the ingress buffer,
 	-- so we can just pass the current pressure value to the callback.
 	local initial = packet.volume
-	local meta = minetest.get_meta(packet)
+	local meta = getmeta(packet)
 	local remaining, runlater = bearer_def.ingress(node, meta, initial, inject)
 
 	if remaining == nil then remaining = 0 end
