@@ -17,6 +17,7 @@ end
 _mod.util = {}
 _mod.util.math = subloader("math_util.lua")
 _mod.util.callbacks = subloader("callback_util.lua")
+_mod.util.metatoken = subloader("meta_ref_token.lua")
 local m_batch = subloader("fluid_packet_batch.lua")
 _mod.m = {}
 _mod.m.batch = m_batch
