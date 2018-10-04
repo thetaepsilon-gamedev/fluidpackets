@@ -11,6 +11,7 @@ _mod.modname = mn
 local mp = minetest.get_modpath(mn).."/"
 _mod.modpath = mp
 dofile(mp.."nodes.lua")
+dofile(mp.."devices.lua")
 
 local controller = dofile(mp.."water_map.lua")
 _mod.controller = controller
