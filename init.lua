@@ -25,6 +25,8 @@ _mod.m.batch = m_batch
 _mod.m.controller = subloader("fluid_map_controller.lua")
 _mod.util.bearer_def = subloader("fluid_bearer_def_util.lua")
 
+_mod.m.bearer_helpers = subloader("fluid_bearer_helpers.lua")
+
 
 
 local export = subloader("setup_interface.lua")
