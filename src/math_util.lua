@@ -9,5 +9,10 @@ i.clamp = clamp
 
 
 
+local isint = function(v) return ((v % 1.0) == 0) end
+i.isint = isint
+
+
+
 return i
 

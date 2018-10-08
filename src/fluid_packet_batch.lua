@@ -142,7 +142,7 @@ local get_node_and_def = function(pos, callback)
 end
 
 -- node position hashing in packet map
-local isint = function(v) return ((v % 1.0) == 0) end
+local isint = _mod.util.math.isint
 local hash = function(pos)
 	assert(isint(pos.x))
 	assert(isint(pos.y))
