@@ -77,13 +77,28 @@ local subloader = ...
 local lib = "com.github.thetaepsilon.minetest.libmthelpers"
 local newstack = mtrequire(lib..".datastructs.stack").new
 
-local ydebug = function(msg)
-	msg = "[fluidpackets] "..msg
-	print(msg)
-	minetest.chat_send_all(msg)
+local sa = minetest.chat_send_all
+local debug_enable_sources = {
+	--["fluid_packet_batch"] = true,
+}
+local is_debug_enabled = function(name)
+	return debug_enable_sources[name]
 end
-local ndebug = function() end
-local debug = ndebug
+local mk_debug = function(name)
+	if not is_debug_enabled(name) then
+		return function() end
+	end
+
+	local l = "[fluidpackets::"..name.."] "
+	return function(msg)
+		msg = l..msg
+		print(msg)
+		sa(msg)
+	end
+end
+local debug = mk_debug("fluid_packet_batch")
+
+
 
 local i = {}
 
