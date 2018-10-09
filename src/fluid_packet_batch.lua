@@ -161,6 +161,7 @@ local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
 local vnew = vector.new
 local can_go_in = _mod.m.inputcheck.can_go_in
+local tdebug = mk_debug("try_insert_volume")
 local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
@@ -175,12 +176,12 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 		-- nil indicates "can't handle", fall back to error status.
 		local r = callback("on_escape", tpos, node, ivolume)
 		if r == nil then
-			debug("can't inject "..ivolume.."m³ @"..h..", not a fluid bearer")
+			tdebug("can't inject "..ivolume.."m³ @"..h..", not a fluid bearer")
 			return ivolume, "ENONBEARER"
 		else
 			-- ensure the callback can't increase the volume.
 			r = min(ivolume, r)
-			debug("on_escape handled, remainder "..r)
+			tdebug("on_escape handled, remainder "..r)
 			return r, ""
 		end
 	end
@@ -206,7 +207,7 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 		cvolume = 0
 		-- write it back to the map now;
 		-- at this point, we're going to be modifying it anyway
-		debug("a packet came into being @"..h)
+		tdebug("a packet came into being @"..h)
 		packetmap[h] = tpacket
 		-- also note shortly we update tpacket.volume
 	else
