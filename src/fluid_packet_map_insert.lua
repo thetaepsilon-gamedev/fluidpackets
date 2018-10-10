@@ -1,3 +1,10 @@
+--[[
+try_insert_volume():
+this routine handles the various details of inserting packets into a packet map,
+including packet merging, capacity checks and callback invocations where needed.
+]]
+
+
 local mk_debug = _mod.m.debug.mk_debug
 local get_node_and_def = _mod.m.bearer_def.get_node_and_def
 local hash = _mod.hash
