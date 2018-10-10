@@ -27,6 +27,7 @@ _mod.util.metatoken = subloader("meta_ref_token.lua")
 _mod.hash = subloader("node_pos_hash.lua")
 _mod.m.bearer_def = subloader("bearer_definition_lookup.lua")
 _mod.m.inputcheck = subloader("node_def_input_check.lua")
+_mod.m.map_insert = subloader("fluid_packet_map_insert.lua")
 local m_batch = subloader("fluid_packet_batch.lua")
 _mod.m.batch = m_batch
 _mod.m.controller = subloader("fluid_map_controller.lua")
