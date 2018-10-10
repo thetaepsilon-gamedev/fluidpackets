@@ -1,3 +1,15 @@
+--[[
+Bearer definition lookup:
+across different liquid networks, the lookup for a bearer's definition varies;
+it may be in the node's definition (but under different keys for other liquids),
+or it may be desireable to look it up from a mod's registration table.
+
+This function is a bit of boilerplate for loading nodes and querying bearer defs;
+the implementation of the above is provided as a callback
+(as specified in fluid_packet_batch.lua).
+It was moved here as it is needed in common by two different modules.
+]]
+
 local i = {}
 
 -- definition lookup as described above.
