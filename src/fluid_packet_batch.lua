@@ -122,21 +122,8 @@ local defcallbacks = {
 
 
 
--- definition lookup as described above.
--- note, the definition may return nil, especially for ignore nodes.
-local get_node_and_def = function(pos, callback)
-	local node = minetest.get_node_or_nil(pos)
-	-- no point trying to load definition for unloaded areas...
-	if not node then return nil, nil end
-
-	local def = callback("lookup_definition", node.name)
-	if def ~= nil then
-		-- we're expected a table in the form as "fluidpackets" above
-		assert(type(def) == "table")
-	end
-
-	return node, def
-end
+-- load node at position and fetch it's bearer definition, if any
+local get_node_and_def = _mod.m.bearer_def.get_node_and_def
 
 -- node position hashing in packet map
 local isint = _mod.util.math.isint
