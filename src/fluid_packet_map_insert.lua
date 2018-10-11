@@ -6,6 +6,7 @@ including packet merging, capacity checks and callback invocations where needed.
 
 
 local mk_debug = _mod.m.debug.mk_debug
+local tdebug = mk_debug("try_insert_volume")
 local get_node_and_def = _mod.m.bearer_def.get_node_and_def
 local hash = _mod.hash
 
@@ -30,7 +31,6 @@ local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
 local vnew = vector.new
 local can_go_in = _mod.m.inputcheck.can_go_in
-local tdebug = mk_debug("try_insert_volume")
 local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
