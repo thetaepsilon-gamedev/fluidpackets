@@ -42,7 +42,10 @@ local unload = function(packet, hash)
 	prn("# packet @"..hash.." volume "..packet.volume.."m³"..del)
 	return true
 end
-
+local load_hint = function(pos, hash)
+	prn("# got load hint @"..hash)
+	return {}
+end
 
 
 
@@ -52,6 +55,7 @@ local callbacks = {
 	on_escape = escape,
 	lookup_definition = lookup,
 	on_packet_unloaded = unload,
+	on_packet_load_hint = load_hint,
 }
 
 return fluidpackets.fluid_map_controller.mk(callbacks)

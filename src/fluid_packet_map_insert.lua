@@ -15,12 +15,48 @@ local vnew = vector.new
 
 
 
+-- invoke the on_packet_load_hint callback and see if it can provide anything.
+local n = "try_load_hint(): "
+local err_dup = n.."conflicting key already exists in packet map: "
+local try_load_hint = function(packetmap, tpos, hash, callback)
+	local packetset = callback("on_packet_load_hint", tpos, hash)
+	-- nothing to insert?
+	if packetset == nil then
+		return nil
+	end
+
+	-- check for collisions first
+	for k, _ in pairs(packetset) do
+		if packetmap[k] ~= nil then
+			error(err_dup..k)
+		end
+	end
+	-- now insert
+	for hash, packet in pairs(packetset) do
+		packetmap[hash] = packet
+	end
+
+	-- return the packet at the position that started this, if any.
+	return packetmap[hash]
+end
+
+
+
+
+
 -- handle the case of a packet not existing yet at a given position:
 -- currently just create a new one with initial volume of zero.
 -- returns created packet and it's volume.
 -- note that the packet may not have a volume yet stored in it;
 -- it is assumed that this field will be written back after volume insertion.
-local handle_no_packet = function(packetmap, tpos, h)
+local handle_no_packet = function(packetmap, tpos, h, callback)
+	-- first, try to see if a load hint causes it to be loaded.
+	-- note that try_load_hint() takes care of inserting into the packet map.
+	local packet = try_load_hint(packetmap, tpos, h, callback)
+	if packet ~= nil then
+		return packet, packet.volume
+	end
+
 	-- create the packet, copying from the target position
 	tpacket = vnew(tpos)
 	cvolume = 0
@@ -96,7 +132,7 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 	-- if the packet doesn't exist currently, create it.
 	local cvolume
 	if tpacket == nil then
-		tpacket, cvolume = handle_no_packet(packetmap, tpos, h)
+		tpacket, cvolume = handle_no_packet(packetmap, tpos, h, callback)
 		-- also note shortly we update tpacket.volume
 		-- this is important as handle_no_packet may not populate it
 	else
