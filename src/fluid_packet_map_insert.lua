@@ -9,6 +9,31 @@ local mk_debug = _mod.m.debug.mk_debug
 local tdebug = mk_debug("try_insert_volume")
 local get_node_and_def = _mod.m.bearer_def.get_node_and_def
 local hash = _mod.hash
+local vnew = vector.new
+
+
+
+
+
+-- handle the case of a packet not existing yet at a given position:
+-- currently just create a new one with initial volume of zero.
+-- returns created packet and it's volume.
+-- note that the packet may not have a volume yet stored in it;
+-- it is assumed that this field will be written back after volume insertion.
+local handle_no_packet = function(packetmap, tpos, h)
+	-- create the packet, copying from the target position
+	tpacket = vnew(tpos)
+	cvolume = 0
+
+	-- write it back to the map now;
+	-- at this point, we're going to be modifying it anyway
+	tdebug("a packet came into being @"..h)
+	packetmap[h] = tpacket
+
+	return tpacket, cvolume
+end
+
+
 
 
 
@@ -29,7 +54,6 @@ local i = {}
 local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
-local vnew = vector.new
 local can_go_in = _mod.m.inputcheck.can_go_in
 local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 	local node, def = get_node_and_def(tpos, callback)
@@ -72,13 +96,9 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 	-- if the packet doesn't exist currently, create it.
 	local cvolume
 	if tpacket == nil then
-		tpacket = vnew(tpos)
-		cvolume = 0
-		-- write it back to the map now;
-		-- at this point, we're going to be modifying it anyway
-		tdebug("a packet came into being @"..h)
-		packetmap[h] = tpacket
+		tpacket, cvolume = handle_no_packet(packetmap, tpos, h)
 		-- also note shortly we update tpacket.volume
+		-- this is important as handle_no_packet may not populate it
 	else
 		cvolume = tpacket.volume
 	end

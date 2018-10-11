@@ -1,4 +1,3 @@
 fluid_packet_map_insert.lua:
 * add on_packet_load_hint callback to try_insert_volume()
-	* this involves changing existing null packet check, factor out?
 
