@@ -116,6 +116,20 @@ local defcallbacks = {
 	-- a false value will leave the packet where it is, unable to move.
 	-- the default is to do nothing and leave the packet alone.
 	on_packet_unloaded = const(false),
+
+	-- called when a live packet doesn't exist yet at a target position.
+	-- this is usually when some volume wants to be inserted there.
+	-- if a node is loaded but no packet exists yet there,
+	-- this callback is given the opportunity to return a packet set,
+	-- which will be merged into the packet map.
+	-- this can be used to ensure packets are re-loaded before merges,
+	-- however some other mechanism for loading (like LBMs) is advised;
+	-- this is simply to work around a weak ordering issue with LBMs.
+	-- this function is passed position and hash,
+	-- and may either return nil or a packet set.
+	-- note that this packet set is not required to include the target pos.
+	-- the default is to do nothing here.
+	on_packet_load_hint = const(nil),
 }
 
 
