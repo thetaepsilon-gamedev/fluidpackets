@@ -16,16 +16,16 @@ local vnew = vector.new
 
 
 -- insert items into a table set while checking for collisions first
-local insert_set_nocollide = function(err_dup, packetmap, packetset)
+local insert_set_nocollide = function(err_dup, target, packetset)
 	-- check for collisions first
 	for k, _ in pairs(packetset) do
-		if packetmap[k] ~= nil then
+		if target[k] ~= nil then
 			error(err_dup..k)
 		end
 	end
 	-- now insert
 	for hash, packet in pairs(packetset) do
-		packetmap[hash] = packet
+		target[hash] = packet
 	end
 end
 
