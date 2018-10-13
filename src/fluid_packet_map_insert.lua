@@ -16,16 +16,18 @@ local vnew = vector.new
 
 
 -- insert items into a table set while checking for collisions first
-local insert_set_nocollide = function(err_dup, target, inset)
-	-- check for collisions first
-	for k, _ in pairs(inset) do
-		if target[k] ~= nil then
-			error(err_dup..k)
+local insert_set_nocollide_ = function(err_dup)
+	return function(target, inset)
+		-- check for collisions first
+		for k, _ in pairs(inset) do
+			if target[k] ~= nil then
+				error(err_dup..k)
+			end
 		end
-	end
-	-- now insert
-	for hash, packet in pairs(inset) do
-		target[hash] = packet
+		-- now insert
+		for hash, packet in pairs(inset) do
+			target[hash] = packet
+		end
 	end
 end
 
@@ -36,6 +38,7 @@ end
 -- invoke the on_packet_load_hint callback and see if it can provide anything.
 local n = "try_load_hint(): "
 local err_dup = n.."conflicting key already exists in packet map: "
+local merge = insert_set_nocollide_(err_dup)
 local try_load_hint = function(packetmap, tpos, hash, callback)
 	local packetset = callback("on_packet_load_hint", tpos, hash)
 	-- nothing to insert?
@@ -43,8 +46,7 @@ local try_load_hint = function(packetmap, tpos, hash, callback)
 		return nil
 	end
 
-	-- merge entries
-	insert_set_nocollide(err_dup, packetmap, packetset)
+	merge(packetmap, packetset)
 
 	-- return the packet at the position that started this, if any.
 	return packetmap[hash]
