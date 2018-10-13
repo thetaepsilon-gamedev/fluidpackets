@@ -23,6 +23,7 @@ _mod.util = {}
 _mod.util.math = subloader("math_util.lua")
 _mod.util.callbacks = subloader("callback_util.lua")
 _mod.util.metatoken = subloader("meta_ref_token.lua")
+_mod.util.tableset = subloader("util_tableset.lua")
 
 _mod.hash = subloader("node_pos_hash.lua")
 _mod.m.bearer_def = subloader("bearer_definition_lookup.lua")

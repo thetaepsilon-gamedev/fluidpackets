@@ -10,26 +10,8 @@ local tdebug = mk_debug("try_insert_volume")
 local get_node_and_def = _mod.m.bearer_def.get_node_and_def
 local hash = _mod.hash
 local vnew = vector.new
+local insert_set_nocollide_ = _mod.util.tableset.insert_set_nocollide_
 
-
-
-
-
--- insert items into a table set while checking for collisions first
-local insert_set_nocollide_ = function(err_dup)
-	return function(target, inset)
-		-- check for collisions first
-		for k, _ in pairs(inset) do
-			if target[k] ~= nil then
-				error(err_dup..k)
-			end
-		end
-		-- now insert
-		for hash, packet in pairs(inset) do
-			target[hash] = packet
-		end
-	end
-end
 
 
 
