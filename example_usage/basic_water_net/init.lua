@@ -12,6 +12,7 @@ local mp = minetest.get_modpath(mn).."/"
 _mod.modpath = mp
 _mod.groups = {
 	cracky = 2,
+	basic_water_net = 1,
 }
 
 dofile(mp.."nodes.lua")
