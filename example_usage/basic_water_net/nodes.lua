@@ -8,9 +8,7 @@ local s = tp.."side.png"
 local b = tp.."bottom.png"
 local tiles = { t, b, s, s, s, s }
 
-local groups = {
-	cracky = 2,
-}
+local groups = _mod.groups
 
 local capacity = 0.5
 minetest.register_node(n, {

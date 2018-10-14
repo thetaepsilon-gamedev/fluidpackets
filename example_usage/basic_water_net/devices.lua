@@ -13,9 +13,7 @@ local output = "waternet_simple_pipe_top.png"
 local blank = "waternet_blank.png"
 
 -- default groups
-local groups = {
-	cracky = 2,
-}
+local groups = _mod.groups
 
 
 

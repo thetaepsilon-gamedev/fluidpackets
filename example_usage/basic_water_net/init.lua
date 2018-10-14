@@ -10,6 +10,10 @@ local mn = minetest.get_current_modname()
 _mod.modname = mn
 local mp = minetest.get_modpath(mn).."/"
 _mod.modpath = mp
+_mod.groups = {
+	cracky = 2,
+}
+
 dofile(mp.."nodes.lua")
 dofile(mp.."devices.lua")
 
