@@ -37,6 +37,9 @@ local escape = function(pos, node, volume)
 end
 local lookup = fluidpackets.util.bearer_def.mk_liquid_lookup(water)
 
+
+
+-- currently unused no-op load/save
 local del = " fell out of the loaded world, deleting"
 local unload = function(packet, hash)
 	prn("# packet @"..hash.." volume "..packet.volume.."m³"..del)
@@ -49,14 +52,34 @@ end
 
 
 
+-- somewhere to keep inactive packets...
+local m_suspend = fluidpackets.callbacks.suspend
+local chunktable = m_suspend.mk_chunktable()
+local c_suspend = m_suspend.create_suspend_callbacks(chunktable)
+
+
+
 
 local callbacks = {
 	on_packet_destroyed = destroy,
 	on_escape = escape,
 	lookup_definition = lookup,
-	on_packet_unloaded = unload,
-	on_packet_load_hint = load_hint,
+	on_packet_unloaded = c_suspend.on_packet_unloaded,
+	on_packet_load_hint = c_suspend.on_packet_load_hint,
 }
 
-return fluidpackets.fluid_map_controller.mk(callbacks)
+local controller = fluidpackets.fluid_map_controller.mk(callbacks)
+local lbm_hint = m_suspend.create_table_lbm_hint(chunktable, controller.bulk_load)
+-- register an LBM so the packet map wakes up again when reloaded
+minetest.register_lbm({
+	name = "basic_water_net:lbm_packet_load",
+	nodenames = { "group:basic_water_net" },
+	run_at_every_load = true,
+	action = lbm_hint,
+})
+
+
+
+return controller
+
 
