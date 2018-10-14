@@ -18,8 +18,8 @@ _mod.groups = {
 dofile(mp.."nodes.lua")
 dofile(mp.."devices.lua")
 
-local controller = dofile(mp.."water_map.lua")
-_mod.controller = controller
+local m_controller = dofile(mp.."water_map.lua")
+_mod.controller = m_controller.controller
 dofile(mp.."globalstep.lua")
 dofile(mp.."inserter_item.lua")
 

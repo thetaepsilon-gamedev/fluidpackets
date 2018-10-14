@@ -77,9 +77,11 @@ minetest.register_lbm({
 	run_at_every_load = true,
 	action = lbm_hint,
 })
+local i = {}
+i.controller = controller
 
 
 
-return controller
+return i
 
 
