@@ -23,6 +23,10 @@ _mod.controller = m_controller.controller
 dofile(mp.."globalstep.lua")
 dofile(mp.."inserter_item.lua")
 
+local e = {}
+e.suspend_table = m_controller.chunktable
+e.controller = m_controller.controller
+basic_water_net = e
 
 
 _mod = nil

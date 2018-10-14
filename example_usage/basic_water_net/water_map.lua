@@ -79,6 +79,8 @@ minetest.register_lbm({
 })
 local i = {}
 i.controller = controller
+-- let the map be visible for debugging
+i.chunktable = chunktable
 
 
 
