@@ -52,8 +52,8 @@ local handle_no_packet = function(packetmap, tpos, h, callback)
 	end
 
 	-- create the packet, copying from the target position
-	tpacket = vnew(tpos)
-	cvolume = 0
+	local tpacket = vnew(tpos)
+	local cvolume = 0
 
 	-- write it back to the map now;
 	-- at this point, we're going to be modifying it anyway
