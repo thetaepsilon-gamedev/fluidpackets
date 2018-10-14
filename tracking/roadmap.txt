@@ -1,0 +1,14 @@
+Bigger features on the way
+* Module for doing load/saves to an inactive "suspend table";
+	this should slot in to the existing callbacks without much breaking changes.
+
+* Make the stuff in fluid_packet_batch and co. work based on partial application;
+	they will take the callbacks table to construct the actual function you would normally call.
+	This should improve performance as the current mechanism may not optimise so well
+	(loads and compares a table each time, which the JIT may have to assume can change each time).
+	Also 
+
+* Make the idea of "packets" more generic so they can be something more than volumes of liquid.
+	This would involve factoring out the idea of merging packets (currently adding volumes)
+	and capacity checks (currently a comparison of volume and capacity in bearer def).
+	These would likely then be passed in as an argument or part of callbacks.
