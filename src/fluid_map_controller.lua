@@ -35,6 +35,9 @@ end
 
 
 local i = {}
+local n = "fluid_map_controller.bulk_load(): "
+local err_dup = n.."key collision while bulk loading packet set, key was "
+local merge = _mod.util.tableset.insert_set_nocollide_(err_dup)
 local construct = function(callbacks)
 	-- only run_packet_batch() really knows what this looks like...
 	assert(type(callbacks) == "table")
@@ -54,6 +57,9 @@ local construct = function(callbacks)
 	end
 	i.iterate = function()
 		return pairs_noref(packetmap)
+	end
+	i.bulk_load = function(packetset)
+		merge(packetmap, packetset)
 	end
 
 	return i
