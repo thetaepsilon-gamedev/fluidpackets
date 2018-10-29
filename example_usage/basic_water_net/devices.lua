@@ -67,3 +67,46 @@ minetest.register_node(n, {
 
 
 
+
+
+-- a "pipe" which additionally has an ABM associated with it;
+-- the ABM injects water into the pipe from nowhere.
+-- this is essentially an infinite water source.
+local capacity = 1.0
+local n = mn .. ":infinite_pipe"
+local zero = function(v) return v == 0 end
+local internal_only = function(node, getmeta, v)
+	return zero(v.x) and zero(v.y) and zero(v.z)
+end
+minetest.register_node(n, {
+	description = "Infinite spring pipe",
+	--tiles = tiles,
+	fluidpackets = {
+		[water] = {
+			type = "pipe",
+			dirtype = "facedir_simple",
+			capacity = capacity,
+			indir = internal_only,
+		}
+	},
+	paramtype2 = "facedir",
+	groups = groups,
+	sounds = default.node_sound_metal_defaults(),
+	on_place = minetest.rotate_node,
+})
+-- controller.insert = function(tpos, ivolume, indir)
+local mapctl = _mod.controller
+local inside = vec3(0,0,0)
+minetest.register_abm({
+	label = "Basic water net: infinite spring pipe",
+	nodenames = { n },
+	interval = 1.0,
+	chance = 1.0,
+	action = function(pos, node, ...)
+		mapctl.insert(pos, 1.0, inside)
+	end,
+})
+
+
+
+
