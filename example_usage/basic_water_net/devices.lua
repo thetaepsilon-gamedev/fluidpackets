@@ -81,7 +81,7 @@ local internal_only = function(node, getmeta, v)
 end
 minetest.register_node(n, {
 	description = "Infinite spring pipe",
-	--tiles = tiles,
+	tiles = { "waternet_infinity.png" },
 	fluidpackets = {
 		[water] = {
 			type = "pipe",
