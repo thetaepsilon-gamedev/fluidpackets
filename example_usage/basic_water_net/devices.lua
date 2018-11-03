@@ -64,6 +64,7 @@ minetest.register_node(n, {
 		}
 	},
 })
+local tiles = nil
 
 
 
@@ -106,6 +107,96 @@ minetest.register_abm({
 		mapctl.insert(pos, 1.0, inside)
 	end,
 })
+
+
+
+
+
+-- a device which takes water into an internal supply saved in metadata.
+-- there is then an ABM that tries to drain this level into a water node below it.
+-- * if node below is water: drains pressure to maintain flow
+-- * if air: sets water, also drains
+-- * if water, below threshold: remove water node
+-- * if non-water: do nothing
+local meta_capacity = 1.0
+local k = "fluidpacket_spigot_volume"
+local spigot_ingress = function(node, getmeta, volume, inject)
+	local meta = getmeta()
+	local current = meta:get_float(k)
+
+	-- don't update the metadata if we're already full.
+	local remainder, updated
+	if current < meta_capacity then
+		local spare = meta_capacity - current
+		if volume < spare then
+			remainder = 0
+			updated = current + volume
+		else
+			-- too much to insert, so only take enough to fill up
+			remainder = volume - spare
+			updated = meta_capacity
+		end
+
+		meta:set_float(k, updated)
+	end
+end
+
+local set_air = { name="air" }
+local set_fluid = { name="default:water_source" }
+local spigot_drain_abm = function(pos, node, ...)
+	local meta = minetest.get_meta(pos)
+	-- we only need to look at the node beneath us at this point
+	-- yes, I know, mutating variables...
+	local bpos = pos
+	pos = nil
+	bpos.y = bpos.y - 1
+
+	local enough_fluid = (meta:get_float(k) == 1.0)
+	local n = minetest.get_node(bpos).name
+	local is_fluid = (n == "default:water_source")
+	local is_empty = (n == "air")
+
+	-- obstruction in the way, we cannot do anything anyway
+	if not (is_fluid or is_empty) then
+		return
+	end
+
+	-- it's either fluid or air at this point,
+	-- so we can safely update it without worrying what it was before.
+	local target_node = enough_fluid and set_fluid or set_air
+	if enough_fluid then
+		-- if we do set a fluid node down, drain meta pressure
+		meta:set_float(k, 0)
+	end
+	minetest.set_node(bpos, target_node)
+end
+-- only allow input from horizontal sides, i.e. Y component is zero.
+local horizontal_only = function(node, getmeta, v)
+	return zero(v.y)
+end
+local n = mn..":spigot"
+minetest.register_node(n, {
+	description = "Water spigot",
+	tiles = tiles,
+	groups = groups,
+	sounds = default.node_sound_metal_defaults(),
+	fluidpackets = {
+		[water] = {
+			type = "device",
+			capacity = 1.0,
+			ingress = spigot_ingress,
+			indir = horizontal_only,
+		}
+	},
+})
+minetest.register_abm({
+	label = "Basic water net: spigot update",
+	nodenames = { n },
+	interval = 1.0,
+	chance = 1.0,
+	action = spigot_drain_abm,
+})
+
 
 
 
