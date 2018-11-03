@@ -175,6 +175,7 @@ local horizontal_only = function(node, getmeta, v)
 	return zero(v.y)
 end
 local n = mn..":spigot"
+local tiles = { blank, "waternet_showerhead.png", input, input, input, input }
 minetest.register_node(n, {
 	description = "Water spigot",
 	tiles = tiles,
@@ -196,6 +197,7 @@ minetest.register_abm({
 	chance = 1.0,
 	action = spigot_drain_abm,
 })
+tiles = nil
 
 
 
