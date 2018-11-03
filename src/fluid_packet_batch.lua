@@ -79,6 +79,7 @@ local newstack = mtrequire(lib..".datastructs.stack").new
 
 local mk_debug = _mod.m.debug.mk_debug
 local debug = mk_debug("fluid_packet_batch")
+local vnew = vector.new
 
 
 
