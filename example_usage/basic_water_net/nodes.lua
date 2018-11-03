@@ -98,3 +98,55 @@ minetest.register_node(n, {
 })
 
 
+
+
+
+-- define a pipe which can be toggled to a sealed state, like a valve.
+-- in the sealed state, water can still flow out, but no sides are accepting.
+-- the open state just acts like a regular pipe.
+-- either can be toggled to the other by right-clicking the node.
+local input = "waternet_input.png"
+local output = "waternet_simple_pipe_top.png"
+
+
+local accept_all = function(...) return true end
+local reject_all = function(...) return false end
+
+local states = { true, false }
+local state_name = function(enabled)
+	local tn = enabled and "open" or "closed"
+	return mn..":valve_"..tn
+end
+
+for _, enabled in ipairs(states) do
+	local tn = enabled and "open" or "closed"
+	local side = "waternet_valve_"..tn..".png"
+	local n = state_name(enabled)
+	local tiles = { output, input, side, side, side, side }
+	local indir = enabled and accept_all or reject_all
+
+	local opposite = state_name(not enabled)
+	local on_rightclick = function(pos, ...)
+		minetest.swap_node(pos, {name=opposite})
+	end
+
+	minetest.register_node(n, {
+		description = "Valve ("..tn..")",
+		tiles = tiles,
+		fluidpackets = {
+			[water] = {
+				type = "pipe",
+				dirtype = "facedir_simple",
+				capacity = 0.5,
+				indir = indir,
+			}
+		},
+		paramtype2 = "facedir",
+		groups = groups,
+		sounds = default.node_sound_metal_defaults(),
+		on_place = minetest.rotate_node,
+		on_rightclick = on_rightclick,
+	})
+end
+
+
