@@ -167,7 +167,7 @@ local vadd = vector.add
 
 -- directed pipe: move fluid in appropriate direction, if possible.
 local get_node_offset = subloader("node_def_directed_pipe.lua")
-local run_packet_directed = function(packetmap, packet, node, bearer_def, callback)
+local run_packet_directed = function(packetmap, packet, node, bearer_def, callback, enqueue)
 	local offset = get_node_offset(node, bearer_def)
 	-- remember, packets are valid position tables
 	local target = vadd(packet, offset)
@@ -181,7 +181,6 @@ local run_packet_directed = function(packetmap, packet, node, bearer_def, callba
 	packet.volume = remainder
 
 	-- no pending action(s) to run for now
-	return nil
 end
 
 
@@ -239,7 +238,7 @@ end
 
 local clamp = _mod.util.math.clamp
 local getmeta = _mod.util.metatoken.get_meta_ref_token
-local run_packet_device = function(packetmap, packet, node, bearer_def, callback)
+local run_packet_device = function(packetmap, packet, node, bearer_def, callback, enqueue)
 	-- set up the packet injector for this callback
 	local inject = mk_inject_packet_(packetmap, packet, callback)
 
@@ -255,7 +254,7 @@ local run_packet_device = function(packetmap, packet, node, bearer_def, callback
 	local volume = clamp(remaining, 0, initial)
 	packet.volume = volume
 
-	return runlater
+	enqueue(runlater)
 end
 
 
@@ -288,7 +287,7 @@ local run_deferred_tasks = function(taskstack)
 					task(pos)
 				end
 			else
-				error(badtask1..ptrace)
+				error(badtask1..ptrace..", got a "..t)
 			end
 		end
 	end
@@ -306,7 +305,7 @@ local bearer_type = {
 local defpleb = " (this is an ERROR in a node definition)"
 local badtype = "unknown node_def.fluidpackets.type enum"..defpleb
 local handle_single_packet =
-	function(packet, hash, node, def, packetmap, c, enqueue)
+	function(packet, hash, node, def, packetmap, c, _enqueue)
 		-- argh, double indent
 
 		-- try to find approprioate sub-handler for the bearer type.
@@ -314,20 +313,21 @@ local handle_single_packet =
 		if not handle then
 			error(badtype)
 		end
-		-- now invoke sub-type handler...
-		debug("packet @"..hash.." inside node of type "..def.type)
-		local runtasks = handle(
-			packetmap, packet, node, def, c)
 
-		-- ... and save any run-later tasks for later, if any,
-		-- noting the position they should be run with.
-		if runtasks then
+		-- enqueue wrapper passed to handlers that remembers the current position.
+		local enqueue = function(runtasks)
+			if runtasks == nil then return end
+
 			-- defensive copy so packet volume can't be interfered with...
 			local pos = vnew(packet)
 			-- stuff the tasks in there to save needing two separate lists.
 			pos.tasks = runtasks
-			enqueue(pos)
+			_enqueue(pos)
 		end
+
+		-- now invoke sub-type handler...
+		debug("packet @"..hash.." inside node of type "..def.type)
+		handle(packetmap, packet, node, def, c, enqueue)
 	-- end RIP indent
 end
 
