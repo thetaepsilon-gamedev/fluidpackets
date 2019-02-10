@@ -86,6 +86,12 @@ local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
 local can_go_in = _mod.m.inputcheck.can_go_in
 local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir, enqueue_at)
+	-- TODO: this really needs refactoring; should not be up to callers to pass in enqueue_at
+	local _t = type(enqueue_at)
+	if _t ~= "function" then
+		error("bug: enqueue_at not passed, this should be refactored: got " .. _t)
+	end
+
 	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
 
@@ -114,8 +120,6 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir, en
 	if not can_go_in(tpos, node, def, indir) then
 		return ivolume, "EWRONGSIDE"
 	end
-	-- NB: at this point, node and indir should be considered consumed
-	node = nil
 	indir = nil
 
 	-- otherwise, try to insert volume into pipe device.

@@ -38,6 +38,7 @@ local i = {}
 local n = "fluid_map_controller.bulk_load(): "
 local err_dup = n.."key collision while bulk loading packet set, key was "
 local merge = _mod.util.tableset.insert_set_nocollide_(err_dup)
+local dummy = function() end
 local construct = function(callbacks)
 	-- only run_packet_batch() really knows what this looks like...
 	assert(type(callbacks) == "table")
@@ -53,7 +54,9 @@ local construct = function(callbacks)
 		run_packet_batch(packetmap, packetkeys, callbacks)
 	end
 	i.insert = function(tpos, ivolume, indir)
-		try_insert_volume(packetmap, ivolume, tpos, callbacks, indir)
+		-- FIXME: currently needs refactoring to allow this to hold on to enqueue_at!
+		-- for now callbacks on external insert are not supported...
+		try_insert_volume(packetmap, ivolume, tpos, callbacks, indir, dummy)
 	end
 	i.iterate = function()
 		return pairs_noref(packetmap)
