@@ -79,30 +79,8 @@ local newstack = mtrequire(lib..".datastructs.stack").new
 
 local mk_debug = _mod.m.debug.mk_debug
 local debug = mk_debug("fluid_packet_batch")
-local vnew = vector.new
 
-
-
--- a small helper for stacks used as the "run later" deferral queue below.
--- runlater tasks consist of a position table with an extra "tasks" member,
--- which can either be a function or a list-like table of the same.
--- any such functions are invoked with that same position as their parameter;
--- they are intended to perform world effects *after* the main batch processing.
--- the rationale for this ordering is explained in the relevant code.
-local create_enqueue = function(stack)
-	local _enqueue = stack.push
-	local push = function(pos, runtasks)
-		if runtasks == nil then return end
-
-		-- defensive copy so packet volume can't be interfered with...
-		-- (in case a packet is used directly as a position)
-		local task = vnew(pos)
-		task.tasks = runtasks
-		_enqueue(task)
-	end
-
-	return push
-end
+local create_deferred = _mod.m.runlater.new
 
 
 
@@ -282,42 +260,6 @@ end
 
 
 
-local badtask1 =
-	"a runlater task from a callback wasn't a function or table"..youpleb
-local badtask2 =
-	"an item in a runlater list from a callback wasn't a function"..youpleb
--- dispatch a runlater tasks list.
--- tasks which want to modify the world must be deferred until after a batch,
--- in order to prevent the kinds of problems discussed for run_packet_batch().
-local run_deferred_tasks = function(taskstack)
-	for i, pos in taskstack.ipairs() do
-		-- tasks are stored inside the position table below
-		local task = pos.tasks
-		-- doubles up as a rudimentary tostring for positions...
-		local ptrace = " @"hash(pos)
-
-		local t = type(task)
-		if t == "function" then
-			-- single task, just run that
-			task(pos)
-		else
-			if t == "table" then
-				-- list of tasks, run them all
-				local list = task
-				for i, task in ipairs(list) do
-					local t = type(task)
-					assert(t == "function", badtask2..ptrace)
-					task(pos)
-				end
-			else
-				error(badtask1..ptrace..", got a "..t)
-			end
-		end
-	end
-end
-
-
-
 
 
 -- handle a single packet when it's starting block is known to be a bearer.
@@ -413,8 +355,7 @@ local l = "run_packet_batch()"
 local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
 local run_packet_batch = function(packetmap, packetkeys, callbacks)
 	local c = callbacks_(callbacks)
-	local runlater = newstack()
-	local enqueue = create_enqueue(runlater)
+	local enqueue, run_deferred = create_deferred()
 
 	for i, key in ipairs(packetkeys) do
 		local packet = packetmap[key]
@@ -440,7 +381,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 
 	-- batch processing complete;
 	-- take care of any runlater tasks now
-	run_deferred_tasks(runlater)
+	run_deferred()
 end
 i.run_packet_batch = run_packet_batch
 
