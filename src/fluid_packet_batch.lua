@@ -178,7 +178,6 @@ local l = "run_packet_batch()"
 local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
 local try_insert_volume_ext = function(packetmap, ivolume, tpos, callback, indir, enqueue_at)
 	local c = callbacks_(callback)
-	print("try_insert_volume adapted by try_insert_volume_ext")
 	return try_insert_volume(packetmap, ivolume, tpos, c, indir, enqueue_at)
 end
 i.try_insert_volume = try_insert_volume_ext
