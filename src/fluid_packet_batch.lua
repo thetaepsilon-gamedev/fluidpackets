@@ -190,7 +190,7 @@ local vadd = vector.add
 
 -- directed pipe: move fluid in appropriate direction, if possible.
 local get_node_offset = subloader("node_def_directed_pipe.lua")
-local run_packet_directed = function(packetmap, packet, node, bearer_def, callback, enqueue)
+local run_packet_directed = function(packetmap, packet, node, bearer_def, callback, enqueue_current, enqueue_at)
 	local offset = get_node_offset(node, bearer_def)
 	-- remember, packets are valid position tables
 	local target = vadd(packet, offset)
@@ -199,7 +199,7 @@ local run_packet_directed = function(packetmap, packet, node, bearer_def, callba
 	-- note: the "target" vector is assumed possibly consumed by this!
 	local remainder =
 		try_insert_volume(
-			packetmap, packet.volume, target, callback, offset)
+			packetmap, packet.volume, target, callback, offset, enqueue_at)
 	-- run_packet_batch will remove any packets that end up with zero volume.
 	packet.volume = remainder
 
@@ -255,15 +255,15 @@ local mk_inject_packet_ = function(packetmap, basepos, callback)
 		-- also, least one component must be non-zero.
 		checkv(offset)
 		local target = vadd(basepos, offset)
-		return try_insert_volume(packetmap, volume, target, callback, offset)
+		return try_insert_volume(packetmap, volume, target, callback, offset, enqueue_at)
 	end
 end
 
 local clamp = _mod.util.math.clamp
 local getmeta = _mod.util.metatoken.get_meta_ref_token
-local run_packet_device = function(packetmap, packet, node, bearer_def, callback, enqueue)
+local run_packet_device = function(packetmap, packet, node, bearer_def, callback, enqueue_current, enqueue_at)
 	-- set up the packet injector for this callback
-	local inject = mk_inject_packet_(packetmap, packet, callback)
+	local inject = mk_inject_packet_(packetmap, packet, callback, enqueue_at)
 
 	-- prepare other initial data for the callback.
 	-- note volume is enforced by previous steps moving into the ingress buffer,
@@ -277,7 +277,7 @@ local run_packet_device = function(packetmap, packet, node, bearer_def, callback
 	local volume = clamp(remaining, 0, initial)
 	packet.volume = volume
 
-	enqueue(runlater)
+	enqueue_current(runlater)
 end
 
 
@@ -344,7 +344,7 @@ local handle_single_packet =
 
 		-- now invoke sub-type handler...
 		debug("packet @"..hash.." inside node of type "..def.type)
-		handle(packetmap, packet, node, def, c, enqueue_current)
+		handle(packetmap, packet, node, def, c, enqueue_current, enqueue_at)
 	-- end RIP indent
 end
 
