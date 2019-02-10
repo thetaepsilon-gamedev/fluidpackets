@@ -11,21 +11,62 @@ local tiles = { t, b, s, s, s, s }
 local groups = _mod.groups
 
 local capacity = 0.5
-minetest.register_node(n, {
-	description = "Basic test pipe",
-	tiles = tiles,
-	fluidpackets = {
-		[water] = {
-			type = "pipe",
-			dirtype = "facedir_simple",
-			capacity = capacity,
-		}
-	},
-	paramtype2 = "facedir",
-	groups = groups,
-	sounds = default.node_sound_metal_defaults(),
-	on_place = minetest.rotate_node,
-})
+local basic_pipe = function()
+	return {
+		type = "pipe",
+		dirtype = "facedir_simple",
+		capacity = capacity,
+	}
+end
+local basic_def = function(fdef, n)
+	return {
+		description = n or "Basic test pipe",
+		tiles = tiles,
+		fluidpackets = {
+			[water] = fdef,
+		},
+		paramtype2 = "facedir",
+		groups = groups,
+		sounds = default.node_sound_metal_defaults(),
+		on_place = minetest.rotate_node,
+	}
+end
+local reg = minetest.register_node
+reg(n, basic_def(basic_pipe()))
+
+
+
+-- variant on the basic pipe that toggles colour when packets pass through it.
+local change_pipe = basic_pipe()
+local n1 = mn..":colour_changer_a"
+local n2 = mn..":colour_changer_b"
+local swap = {
+	[n1] = n2,
+	[n2] = n1,
+}
+change_pipe.packet_arrived = function(node, inserted_volume)
+	local swap_target = swap[node.name]
+	node.name = swap_target
+	return function(pos)
+		minetest.swap_node(pos, node)
+	end
+end
+local n1def = basic_def(change_pipe, "colour changer pipe A")
+local n2def = basic_def(change_pipe, "colour changer pipe B")
+-- change the second one's tiles to the other colour
+local tiles_b = {}
+for i, tex in ipairs(tiles) do
+	local blue = tex.."^[multiply:#001080"
+	tiles_b[i] = blue
+end
+n2def.tiles = tiles_b
+
+reg(n1, n1def)
+reg(n2, n2def)
+
+
+
+
 
 
 
