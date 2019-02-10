@@ -83,6 +83,29 @@ local vnew = vector.new
 
 
 
+-- a small helper for stacks used as the "run later" deferral queue below.
+-- runlater tasks consist of a position table with an extra "tasks" member,
+-- which can either be a function or a list-like table of the same.
+-- any such functions are invoked with that same position as their parameter;
+-- they are intended to perform world effects *after* the main batch processing.
+-- the rationale for this ordering is explained in the relevant code.
+local create_enqueue = function(stack)
+	local _enqueue = stack.push
+	local push = function(pos, runtasks)
+		if runtasks == nil then return end
+
+		-- defensive copy so packet volume can't be interfered with...
+		-- (in case a packet is used directly as a position)
+		local pos = vnew(packet)
+		pos.tasks = runtasks
+		_enqueue(pos)
+	end
+
+	return push
+end
+
+
+
 local i = {}
 
 
@@ -305,7 +328,7 @@ local bearer_type = {
 local defpleb = " (this is an ERROR in a node definition)"
 local badtype = "unknown node_def.fluidpackets.type enum"..defpleb
 local handle_single_packet =
-	function(packet, hash, node, def, packetmap, c, _enqueue)
+	function(packet, hash, node, def, packetmap, c, enqueue_at)
 		-- argh, double indent
 
 		-- try to find approprioate sub-handler for the bearer type.
@@ -315,19 +338,13 @@ local handle_single_packet =
 		end
 
 		-- enqueue wrapper passed to handlers that remembers the current position.
-		local enqueue = function(runtasks)
-			if runtasks == nil then return end
-
-			-- defensive copy so packet volume can't be interfered with...
-			local pos = vnew(packet)
-			-- stuff the tasks in there to save needing two separate lists.
-			pos.tasks = runtasks
-			_enqueue(pos)
+		local enqueue_current = function(runtasks)
+			return enqueue_at(packet, runtasks)
 		end
 
 		-- now invoke sub-type handler...
 		debug("packet @"..hash.." inside node of type "..def.type)
-		handle(packetmap, packet, node, def, c, enqueue)
+		handle(packetmap, packet, node, def, c, enqueue_current)
 	-- end RIP indent
 end
 
@@ -397,7 +414,7 @@ local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
 local run_packet_batch = function(packetmap, packetkeys, callbacks)
 	local c = callbacks_(callbacks)
 	local runlater = newstack()
-	local enqueue = runlater.push
+	local enqueue = create_enqueue(runlater)
 
 	for i, key in ipairs(packetkeys) do
 		local packet = packetmap[key]
