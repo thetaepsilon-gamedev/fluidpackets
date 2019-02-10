@@ -96,9 +96,9 @@ local create_enqueue = function(stack)
 
 		-- defensive copy so packet volume can't be interfered with...
 		-- (in case a packet is used directly as a position)
-		local pos = vnew(packet)
-		pos.tasks = runtasks
-		_enqueue(pos)
+		local task = vnew(pos)
+		task.tasks = runtasks
+		_enqueue(task)
 	end
 
 	return push
@@ -247,7 +247,7 @@ local checkv = function(o)
 	assert(valid, "offset vector must be non-zero"..youpleb)
 end
 local neg = "inject_packet() was called with a non-positive volume"..youpleb
-local mk_inject_packet_ = function(packetmap, basepos, callback)
+local mk_inject_packet_ = function(packetmap, basepos, callback, enqueue_at)
 	return function(volume, offset)
 		assert(volume > 0, neg)
 		-- in order to maintain proper hashing,
