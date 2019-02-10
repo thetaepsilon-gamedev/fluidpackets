@@ -5,12 +5,12 @@ A single entry point for the following needs:
 + introducing packets into the network from e.g. ABMs
 + triggering a step to happen
 + insert a hashmap of packets when an area becomes loaded.
-+ get an iterator for all hash, packet pairs (for saving)
++ get all packets present in a map pushed to a function for saving.
 
 map.insert(pos, volume)
 map.step()
 map.bulk_load(packetset)
-map.iterate()
+map.iterate(sink  = function(hash, packet) -> bool, false halts loop)
 ]]
 
 local lib = "com.github.thetaepsilon.minetest.libmthelpers"
@@ -58,8 +58,11 @@ local construct = function(callbacks)
 		-- for now callbacks on external insert are not supported...
 		try_insert_volume(packetmap, ivolume, tpos, callbacks, indir, dummy)
 	end
-	i.iterate = function()
-		return pairs_noref(packetmap)
+	i.iterate = function(sink)
+		for k, v in pairs(packetmap) do
+			if not sink(k, v) then return false end
+		end
+		return true
 	end
 	i.bulk_load = function(packetset)
 		merge(packetmap, packetset)
