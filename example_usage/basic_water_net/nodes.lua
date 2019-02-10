@@ -118,6 +118,16 @@ local state_name = function(enabled)
 	return mn..":valve_"..tn
 end
 
+-- example usage of the packet_arrived hook:
+-- yell a message to players reporting the arrived volume.
+-- probably not to be enabled in general use due to spam!
+local packet_arrived = function(node, volume)
+	return function(pos)
+		minetest.chat_send_all("# packet arrived at valve: " .. tostring(volume))
+	end
+end
+packet_arrived = nil	-- uncomment at your (chat's) peril!
+
 for _, enabled in ipairs(states) do
 	local tn = enabled and "open" or "closed"
 	local side = "waternet_valve_"..tn..".png"
@@ -139,6 +149,7 @@ for _, enabled in ipairs(states) do
 				dirtype = "facedir_simple",
 				capacity = 0.5,
 				indir = indir,
+				packet_arrived = packet_arrived,
 			}
 		},
 		paramtype2 = "facedir",

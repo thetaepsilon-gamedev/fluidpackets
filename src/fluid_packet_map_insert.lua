@@ -85,7 +85,7 @@ local defpleb = " (this is an ERROR in a node definition)"
 local nocap = "nodedef.fluidpackets.capacity missing or not a number"..defpleb
 local min = math.min
 local can_go_in = _mod.m.inputcheck.can_go_in
-local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
+local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir, enqueue_at)
 	local node, def = get_node_and_def(tpos, callback)
 	local h = hash(tpos)
 
@@ -137,6 +137,7 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 	local remainder
 	local total = cvolume + ivolume
 	local overshoot = total - capacity
+	local old = cvolume
 	if overshoot <= 0 then
 		-- it can all fit? just set cvolume to that, all good
 		cvolume = total
@@ -145,6 +146,18 @@ local try_insert_volume = function(packetmap, ivolume, tpos, callback, indir)
 		-- some of it can't fit, so take up to the capacity
 		cvolume = capacity
 		remainder = overshoot
+	end
+
+	-- inserted calculation is used for bearer post-process hooks.
+	-- some nodes use this to e.g. turn on a mesecons signal.
+	-- post hook on bearer definition:
+	-- fluidpackets[nodename].packet_arrived = function(node, inserted_volume)
+	-- returns a closure function that will receive the real world position later.
+	local inserted = cvolume - old
+	assert(inserted >= 0)
+	local posthook = def.packet_arrived
+	if inserted > 0 and posthook then
+		enqueue_at(tpos, posthook(node, inserted))
 	end
 
 	-- update volume of packet.
