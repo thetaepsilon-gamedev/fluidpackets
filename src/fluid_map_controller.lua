@@ -17,7 +17,7 @@ local lib = "com.github.thetaepsilon.minetest.libmthelpers"
 local pairs_noref = mtrequire(lib..".iterators.pairs_noref")
 
 local run_packet_batch = _mod.m.batch.run_packet_batch
-local try_insert_volume = _mod.m.batch.try_insert_volume
+local _try_insert_volume = _mod.m.batch.try_insert_volume
 
 -- get a list of keys from a table, used in step() below
 local get_key_list = function(t)
@@ -46,6 +46,12 @@ local construct = function(callbacks)
 	-- start out with an empty packet map.
 	local packetmap = {}
 
+	local try_insert_volume = function(tpos, ivolume, indir)
+		-- FIXME: currently needs refactoring to allow this to hold on to enqueue_at!
+		-- for now callbacks on external insert are not supported...
+		_try_insert_volume(packetmap, ivolume, tpos, callbacks, indir, dummy)
+	end
+
 	local i = {}
 	i.step = function()
 		-- create a list of currently present keys in the map.
@@ -53,11 +59,7 @@ local construct = function(callbacks)
 		local packetkeys = get_key_list(packetmap)
 		run_packet_batch(packetmap, packetkeys, callbacks)
 	end
-	i.insert = function(tpos, ivolume, indir)
-		-- FIXME: currently needs refactoring to allow this to hold on to enqueue_at!
-		-- for now callbacks on external insert are not supported...
-		try_insert_volume(packetmap, ivolume, tpos, callbacks, indir, dummy)
-	end
+	i.insert = try_insert_volume
 	i.iterate = function(sink)
 		for k, v in pairs(packetmap) do
 			if not sink(k, v) then return false end
