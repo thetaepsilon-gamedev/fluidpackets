@@ -80,8 +80,6 @@ local newstack = mtrequire(lib..".datastructs.stack").new
 local mk_debug = _mod.m.debug.mk_debug
 local debug = mk_debug("fluid_packet_batch")
 
-local create_deferred = _mod.m.runlater.new
-
 
 
 local i = {}
@@ -353,9 +351,8 @@ end
 -- packets created at previously empty positions must wait until the next turn.
 local l = "run_packet_batch()"
 local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
-local run_packet_batch = function(packetmap, packetkeys, callbacks)
+local run_packet_batch = function(packetmap, packetkeys, callbacks, enqueue)
 	local c = callbacks_(callbacks)
-	local enqueue, run_deferred = create_deferred()
 
 	for i, key in ipairs(packetkeys) do
 		local packet = packetmap[key]
@@ -378,10 +375,6 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks)
 		-- for e.g. no volume left
 		handle_delete(packet, key, packetmap)
 	end
-
-	-- batch processing complete;
-	-- take care of any runlater tasks now
-	run_deferred()
 end
 i.run_packet_batch = run_packet_batch
 

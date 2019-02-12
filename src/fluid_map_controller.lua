@@ -18,6 +18,7 @@ local pairs_noref = mtrequire(lib..".iterators.pairs_noref")
 
 local run_packet_batch = _mod.m.batch.run_packet_batch
 local _try_insert_volume = _mod.m.batch.try_insert_volume
+local open_runlater_scope = _mod.m.runlater.new
 
 -- get a list of keys from a table, used in step() below
 local get_key_list = function(t)
@@ -54,10 +55,16 @@ local construct = function(callbacks)
 
 	local i = {}
 	i.step = function()
+		local enqueue, close_scope = open_runlater_scope()
+
 		-- create a list of currently present keys in the map.
 		-- the rationale for this is described in fluid_packet_batch.lua.
 		local packetkeys = get_key_list(packetmap)
-		run_packet_batch(packetmap, packetkeys, callbacks)
+		run_packet_batch(packetmap, packetkeys, callbacks, enqueue)
+
+		-- batch processing complete;
+		-- take care of any runlater tasks now
+		close_scope()
 	end
 	i.insert = try_insert_volume
 	i.iterate = function(sink)
