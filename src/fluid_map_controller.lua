@@ -18,7 +18,7 @@ local pairs_noref = mtrequire(lib..".iterators.pairs_noref")
 
 local run_packet_batch = _mod.m.batch.run_packet_batch
 local _try_insert_volume = _mod.m.batch.try_insert_volume
-local open_runlater_scope = _mod.m.runlater.new
+local __open_runlater_scope = _mod.m.runlater.new
 
 -- get a list of keys from a table, used in step() below
 local get_key_list = function(t)
@@ -46,34 +46,73 @@ local construct = function(callbacks)
 
 	-- start out with an empty packet map.
 	local packetmap = {}
+	-- enqueuer accessed by try_insert_volume below.
+	-- NB: must use get_scope_with_try_insert below to open runlater scope!
+	local __enqueuer, __commit
 
-	local try_insert_volume = function(tpos, ivolume, indir)
-		-- FIXME: currently needs refactoring to allow this to hold on to enqueue_at!
-		-- for now callbacks on external insert are not supported...
-		_try_insert_volume(packetmap, ivolume, tpos, callbacks, indir, dummy)
+	-- as things open and close scopes below,
+	-- we need to ensure we don't nest them
+	-- (that would be undesirable for the same reason we defer to begin with).
+	local __locked = false
+
+	local __try_insert_volume = function(tpos, ivolume, indir)
+		_try_insert_volume(packetmap, ivolume, tpos, callbacks, indir, __enqueuer)
+	end
+	local __close_scope = function()
+		assert(__locked)
+		__commit()
+		__enqueuer = nil
+		__commit = nil
+		__locked = false
+	end
+	local get_scope_with_try_insert = function()
+		-- TODO: this ought to belong in it's own encapsulated class,
+		-- so we don't end up tip-toeing around the lock so much
+		-- (and so we can't accidentally use the methods)
+		assert(not __locked)
+		local enqueue, commit = __open_runlater_scope()
+		__locked = true
+		__enqueuer = enqueue
+		__commit = commit
+
+		return enqueue, __close_scope, __try_insert_volume
 	end
 
 	local i = {}
 	i.step = function()
-		local enqueue, close_scope = open_runlater_scope()
+		local enqueue, close_scope, try_insert = get_scope_with_try_insert()
 
 		-- create a list of currently present keys in the map.
 		-- the rationale for this is described in fluid_packet_batch.lua.
 		local packetkeys = get_key_list(packetmap)
+
+		-- then execute...
 		run_packet_batch(packetmap, packetkeys, callbacks, enqueue)
 
+		-- ... then:
 		-- batch processing complete;
 		-- take care of any runlater tasks now
 		close_scope()
 	end
-	i.insert = try_insert_volume
+
+	-- XXX: would it break things massively if we stretched the scope time,
+	-- so that runlater only happens at the next full batch?
+	-- this would require a more intelligent system for callbacks though.
+	-- (including having to name callbacks and possibly only run once per node...)
+	i.insert = function(tpos, ivolume, indir)
+		local _, commit, try_insert = get_scope_with_try_insert()
+		local remainder, status = try_insert(tpos, ivolume, indir)
+		commit()
+	end
 	i.iterate = function(sink)
+		assert(not __locked)	-- oi, stop trying to save mid-batch
 		for k, v in pairs(packetmap) do
 			if not sink(k, v) then return false end
 		end
 		return true
 	end
 	i.bulk_load = function(packetset)
+		assert(not __locked)	-- similar to above
 		merge(packetmap, packetset)
 	end
 
