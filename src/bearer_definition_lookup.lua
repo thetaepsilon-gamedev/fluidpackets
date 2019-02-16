@@ -12,22 +12,33 @@ It was moved here as it is needed in common by two different modules.
 
 local i = {}
 
+local get_node_or_nil = minetest.get_node_or_nil
+
 -- definition lookup as described above.
 -- note, the definition may return nil, especially for ignore nodes.
-local get_node_and_def = function(pos, callback)
-	local node = minetest.get_node_or_nil(pos)
-	-- no point trying to load definition for unloaded areas...
-	if not node then return nil, nil end
+local new_MTNodeDefLookup = function(lookup_definition)
+	assert(type(lookup_definition) == "function")
 
-	local def = callback("lookup_definition", node.name)
-	if def ~= nil then
-		-- we're expected a table in the form as "fluidpackets" above
-		assert(type(def) == "table")
+	local lookup = function(pos, callback)
+		local node = get_node_or_nil(pos)
+		-- no point trying to load definition for unloaded areas...
+		if not node then return nil, nil end
+
+		local def = lookup_definition(node.name)
+		if def ~= nil then
+			-- we're expected a table in the form as "fluidpackets" above
+			assert(type(def) == "table")
+		end
+
+		return node, def
 	end
-
-	return node, def
+	
+	local INodeDefLookup = {
+		get_node_and_def = lookup,
+	}
+	return INodeDefLookup
 end
-i.get_node_and_def = get_node_and_def
+i.new_MTNodeDefLookup = new_MTNodeDefLookup
 
 
 
