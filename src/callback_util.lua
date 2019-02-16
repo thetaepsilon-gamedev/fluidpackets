@@ -69,6 +69,35 @@ i.callback_invoke__ = callback_invoke__
 
 
 
+
+-- retrieve interface member type functions.
+-- eliminates some error message boilerplate etc.
+local get_interface_member_ = function(caller, typename, argname)
+	local object_desc
+	if argname then
+		object_desc = "argument [" .. typename .. " " .. argname .. "]"
+	else
+		object_desc = "type " .. typename
+	end
+	local msg_base =
+		caller .. ": member from " .. object_desc ..
+		" was not a function: "
+
+	return function(source, member_name)
+		local result = source[member_name]
+		local t = type(result)
+		if t ~= function then
+			error(msg_base .. member_name .. " - got type " .. t)
+		else
+			return result
+		end
+	end
+end
+i.get_interface_member_ = get_interface_member_
+
+
+
+
 return i
 
 
