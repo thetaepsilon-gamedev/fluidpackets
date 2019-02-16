@@ -86,7 +86,7 @@ local get_interface_member_ = function(caller, typename, argname)
 	return function(source, member_name)
 		local result = source[member_name]
 		local t = type(result)
-		if t ~= function then
+		if t ~= "function" then
 			error(msg_base .. member_name .. " - got type " .. t)
 		else
 			return result
