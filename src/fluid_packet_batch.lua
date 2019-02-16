@@ -143,39 +143,27 @@ local get_node_and_def = _mod.m.bearer_def.get_node_and_def
 local isint = _mod.util.math.isint
 local hash = _mod.hash
 
-
-
--- inserting volume into packet map
-local try_insert_volume = _mod.m.map_insert.try_insert_volume
-
--- we have to wrap the callbacks up into function form to call the above;
--- if entered via run_packet_batch(), that function takes care of this.
-local l = "run_packet_batch()"
-local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
-local try_insert_volume_ext = function(packetmap, ivolume, tpos, callback, indir, enqueue_at)
-	local c = callbacks_(callback)
-	return try_insert_volume(packetmap, ivolume, tpos, c, indir, enqueue_at)
-end
-i.try_insert_volume = try_insert_volume_ext
-
-
-
 local vadd = vector.add
+
+
 
 
 
 -- directed pipe: move fluid in appropriate direction, if possible.
 local get_node_offset = subloader("node_def_directed_pipe.lua")
-local run_packet_directed = function(packetmap, packet, node, bearer_def, callback, enqueue_current, enqueue_at)
+local run_packet_directed = function(packet, node, bearer_def, enqueue_current, try_insert_volume)
 	local offset = get_node_offset(node, bearer_def)
 	-- remember, packets are valid position tables
 	local target = vadd(packet, offset)
 
 	-- try_insert_volume handles air among other things.
 	-- note: the "target" vector is assumed possibly consumed by this!
+	local volume = packet.volume
+	assert(volume ~= nil)
 	local remainder =
 		try_insert_volume(
-			packetmap, packet.volume, target, callback, offset, enqueue_at)
+			target, volume, offset)
+
 	-- run_packet_batch will remove any packets that end up with zero volume.
 	packet.volume = remainder
 
@@ -223,7 +211,7 @@ local checkv = function(o)
 	assert(valid, "offset vector must be non-zero"..youpleb)
 end
 local neg = "inject_packet() was called with a non-positive volume"..youpleb
-local mk_inject_packet_ = function(packetmap, basepos, callback, enqueue_at)
+local mk_inject_packet_ = function(basepos, try_insert_volume)
 	return function(volume, offset)
 		assert(volume > 0, neg)
 		-- in order to maintain proper hashing,
@@ -231,15 +219,15 @@ local mk_inject_packet_ = function(packetmap, basepos, callback, enqueue_at)
 		-- also, least one component must be non-zero.
 		checkv(offset)
 		local target = vadd(basepos, offset)
-		return try_insert_volume(packetmap, volume, target, callback, offset, enqueue_at)
+		return try_insert_volume(target, volume, offset)
 	end
 end
 
 local clamp = _mod.util.math.clamp
 local getmeta = _mod.util.metatoken.get_meta_ref_token
-local run_packet_device = function(packetmap, packet, node, bearer_def, callback, enqueue_current, enqueue_at)
+local run_packet_device = function(packet, node, bearer_def, enqueue_current, try_insert_volume)
 	-- set up the packet injector for this callback
-	local inject = mk_inject_packet_(packetmap, packet, callback, enqueue_at)
+	local inject = mk_inject_packet_(packet, try_insert_volume)
 
 	-- prepare other initial data for the callback.
 	-- note volume is enforced by previous steps moving into the ingress buffer,
@@ -268,7 +256,7 @@ local bearer_type = {
 local defpleb = " (this is an ERROR in a node definition)"
 local badtype = "unknown node_def.fluidpackets.type enum"..defpleb
 local handle_single_packet =
-	function(packet, hash, node, def, packetmap, c, enqueue_at)
+	function(packet, hash, node, def, enqueue_at, try_insert_volume)
 		-- argh, double indent
 
 		-- try to find approprioate sub-handler for the bearer type.
@@ -284,7 +272,7 @@ local handle_single_packet =
 
 		-- now invoke sub-type handler...
 		debug("packet @"..hash.." inside node of type "..def.type)
-		handle(packetmap, packet, node, def, c, enqueue_current, enqueue_at)
+		handle(packet, node, def, enqueue_current, try_insert_volume)
 	-- end RIP indent
 end
 
@@ -343,6 +331,16 @@ end
 
 
 
+local checkpacket = function(packet, hash)
+	local msg = "packet with hash " .. hash .. " "
+	assert(packet ~= nil, msg .. "was nil from internal table")
+	assert(packet.volume ~= nil, msg .. "had nil volume")
+end
+
+
+
+
+
 -- and now, the main batch running routine.
 -- this is provided a list of hashed keys which should be processed;
 -- this is fixed at the beginning of the batch instead of using pairs().
@@ -351,13 +349,16 @@ end
 -- packets created at previously empty positions must wait until the next turn.
 local l = "run_packet_batch()"
 local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
-local run_packet_batch = function(packetmap, packetkeys, callbacks, enqueue)
+local run_packet_batch = function(packetmap, packetkeys, callbacks, enqueue_at, try_insert_volume)
 	local c = callbacks_(callbacks)
 
 	for i, key in ipairs(packetkeys) do
 		local packet = packetmap[key]
 		local hash = key
 		local node, def = get_node_and_def(packet, c)
+
+		-- some sanity checks on internal structure.
+		checkpacket(packet, hash)
 
 		if node == nil then
 			-- packet is inside unloaded area?
@@ -368,7 +369,7 @@ local run_packet_batch = function(packetmap, packetkeys, callbacks, enqueue)
 			packet.volume = 0
 		else
 			handle_single_packet(
-				packet, hash, node, def, packetmap, c, enqueue)
+				packet, hash, node, def, enqueue_at, try_insert_volume)
 		end
 
 		-- handle potentially deleting the packet when done,
