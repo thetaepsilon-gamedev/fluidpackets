@@ -7,7 +7,6 @@ including packet merging, capacity checks and callback invocations where needed.
 
 local mk_debug = _mod.m.debug.mk_debug
 local tdebug = mk_debug("try_insert_volume")
-local new_MTNodeDefLookup = _mod.m.bearer_def.new_MTNodeDefLookup
 local hash = _mod.hash
 local vnew = vector.new
 local insert_set_nocollide_ = _mod.util.tableset.insert_set_nocollide_
@@ -22,7 +21,7 @@ local n = "try_load_hint(): "
 local err_dup = n.."conflicting key already exists in packet map: "
 local merge = insert_set_nocollide_(err_dup)
 local try_load_hint = function(packetmap, tpos, hash, on_packet_load_hint)
-	local packetset = on_packet_load_hint(, tpos, hash)
+	local packetset = on_packet_load_hint(tpos, hash)
 	-- nothing to insert?
 	if packetset == nil then
 		return nil
@@ -89,21 +88,21 @@ local can_go_in = _mod.m.inputcheck.can_go_in
 
 
 local get_member =
-	_mod.util.callbacks.get_interface_member_("new_VolumeInserter", "IPacketLoadEscapeLookup")
+	_mod.util.callbacks.get_interface_member_("new_VolumeInserter", "IPacketLoadEscape")
 
-local new_VolumeInserter = function(IPacketLoadEscapeLookup, packetmap)
+local get_member2 =
+	_mod.util.callbacks.get_interface_member_("new_VolumeInserter", "INodeDefLookup")
+
+local new_VolumeInserter = function(IPacketLoadEscape, INodeDefLookup, packetmap)
 	-- NB: enqueue_at is *unique to each batch* and hence passed to each invocation.
 	-- TODO: should probably have a helper "get interface member" routine here...
 	-- if only to fail fast if the retrieved functions are, well, not functions.
 	local on_packet_load_hint =
-		get_member(IPacketLoadEscapeLookup, "on_packet_load_hint")
+		get_member(IPacketLoadEscape, "on_packet_load_hint")
 	local on_escape =
-		get_member(IPacketLoadEscapeLookup, "on_escape")
-	local lookup_definition =
-		get_member(IPacketLoadEscapeLookup, "lookup_definition")
+		get_member(IPacketLoadEscape, "on_escape")
 	
-	local get_node_and_def =
-		new_MTNodeDefLookup(lookup_definition).get_node_and_def
+	local get_node_and_def = get_member2(INodeDefLookup, "get_node_and_def")
 
 
 
@@ -113,7 +112,7 @@ local new_VolumeInserter = function(IPacketLoadEscapeLookup, packetmap)
 			error("bug: enqueue_at not a function, got " .. _t)
 		end
 
-		local node, def = get_node_and_def(tpos, lookup_definition)
+		local node, def = get_node_and_def(tpos)
 		local h = hash(tpos)
 
 		if node == nil then

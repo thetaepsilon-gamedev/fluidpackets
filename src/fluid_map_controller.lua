@@ -16,7 +16,6 @@ map.iterate(sink  = function(hash, packet) -> bool, false halts loop)
 local lib = "com.github.thetaepsilon.minetest.libmthelpers"
 local pairs_noref = mtrequire(lib..".iterators.pairs_noref")
 
-local run_packet_batch = _mod.m.batch.run_packet_batch
 local __open_runlater_scope = _mod.m.runlater.new
 
 -- get a list of keys from a table, used in step() below
@@ -30,23 +29,9 @@ local get_key_list = function(t)
 	return list
 end
 
-
-
-
-
--- callback wrapper translation moved here from fluid_packet_batch.lua;
--- this callback wrapping is in the process of going away
--- (i.e. eventually try_insert_volume will be constructed as a closure,
--- retaining references to the callbacks it needs itself).
-local try_insert_volume_unwrapped = _mod.m.map_insert.try_insert_volume
-
-local l = "_try_insert_volume()"
-local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
-local _try_insert_volume = function(packetmap, ivolume, tpos, callback, indir, enqueue_at)
-	local c = callbacks_(callback)
-	return try_insert_volume_unwrapped(packetmap, ivolume, tpos, c, indir, enqueue_at)
-end
-
+local new_VolumeInserter = _mod.m.map_insert.new_VolumeInserter
+local new_MTNodeDefLookup = _mod.m.bearer_def.new_MTNodeDefLookup
+local new_BatchRunner = _mod.m.batch.new_BatchRunner
 
 
 
@@ -59,12 +44,34 @@ local err_concurrent = "fluid map controller re-entered!? previous entry point w
 local err_concurrent2 = " , trying to be replaced by "
 local merge = _mod.util.tableset.insert_set_nocollide_(err_dup)
 local dummy = function() end
-local construct = function(callbacks)
-	-- only run_packet_batch() really knows what this looks like...
-	assert(type(callbacks) == "table")
+local get_member =
+	_mod.util.callbacks.get_interface_member_(
+		"new_FluidMapController",
+		"IFluidMapControllerCallbacks")
 
+
+local new_FluidMapController = function(IFluidMapControllerCallbacks)
 	-- start out with an empty packet map.
 	local packetmap = {}
+
+	-- initialise objects used for inserting into and processing the map.
+	local lookup_definition =
+		get_member(IFluidMapControllerCallbacks, "lookup_definition")
+	local INodeDefLookup = new_MTNodeDefLookup(lookup_definition)
+
+	local _try_insert_volume =
+		new_VolumeInserter(
+			IFluidMapControllerCallbacks,
+			INodeDefLookup,
+			packetmap).try_insert_volume
+
+	local run_packet_batch =
+		new_BatchRunner(
+			IFluidMapControllerCallbacks,
+			INodeDefLookup,
+			packetmap).run_packet_batch
+
+
 	-- enqueuer accessed by try_insert_volume below.
 	-- NB: must use get_scope_with_try_insert below to open runlater scope!
 	local __enqueuer, __commit
@@ -76,7 +83,7 @@ local construct = function(callbacks)
 
 	local __try_insert_volume = function(tpos, ivolume, indir)
 		assert(ivolume ~= nil)
-		return _try_insert_volume(packetmap, ivolume, tpos, callbacks, indir, __enqueuer)
+		return _try_insert_volume(ivolume, tpos, indir, __enqueuer)
 	end
 	local __close_scope = function()
 		assert(__locked)
@@ -106,6 +113,8 @@ local construct = function(callbacks)
 
 	local i = {}
 	i.step = function()
+		-- note: try_insert_volume has to be passed in each time;
+		-- we want it's runlater entries to go into the "current" batch.
 		local enqueue, close_scope, try_insert = get_scope_with_try_insert("step()")
 
 		-- create a list of currently present keys in the map.
@@ -113,7 +122,7 @@ local construct = function(callbacks)
 		local packetkeys = get_key_list(packetmap)
 
 		-- then execute...
-		run_packet_batch(packetmap, packetkeys, callbacks, enqueue, try_insert)
+		run_packet_batch(packetkeys, enqueue, try_insert)
 
 		-- ... then:
 		-- batch processing complete;
@@ -150,7 +159,10 @@ local construct = function(callbacks)
 
 	return i
 end
-i.mk = construct
+
+i.new_FluidMapController = new_FluidMapController
+-- legacy compatability name
+i.mk = new_FluidMapController
 
 
 

@@ -284,10 +284,10 @@ end
 -- if this returns nil, the packet is to be "detached"
 -- from the packet map and forgotten about -
 -- this may be because the packet has been consumed by a callback.
-local handle_suspend = function(packet, hash, c)
+local handle_suspend = function(packet, hash, on_packet_unloaded)
 	debug("packet @"..hash.." fell out of the world")
 	-- try to see if a callback wants to handle this case.
-	if c("on_packet_unloaded", packet, hash) then
+	if on_packet_unloaded(packet, hash) then
 		-- if it said it could handle it, then detach it;
 		-- otherwise leave it be.
 		-- this allows the callback to "consume" the packet,
@@ -348,36 +348,59 @@ end
 -- and b) it prevents a potential instant movement problem;
 -- packets created at previously empty positions must wait until the next turn.
 local l = "run_packet_batch()"
-local callbacks_ = _mod.util.callbacks.callback_invoke__(defcallbacks, l)
-local run_packet_batch = function(packetmap, packetkeys, callbacks, enqueue_at, try_insert_volume)
-	local c = callbacks_(callbacks)
+local get_member =
+	_mod.util.callbacks.get_interface_member_(
+		"new_BatchRunner",
+		"IBatchRunnerCallbacks")
 
-	for i, key in ipairs(packetkeys) do
-		local packet = packetmap[key]
-		local hash = key
-		local node, def = get_node_and_def(packet, c)
+local get_member2 =
+	_mod.util.callbacks.get_interface_member_(
+		"new_BatchRunner",
+		"INodeDefLookup")
 
-		-- some sanity checks on internal structure.
-		checkpacket(packet, hash)
+local new_BatchRunner = function(IBatchRunnerCallbacks, INodeDefLookup, packetmap)
+	local on_packet_unloaded =
+		get_member(IBatchRunnerCallbacks, "on_packet_unloaded")
+	local on_packet_destroyed =
+		get_member(IBatchRunnerCallbacks, "on_packet_destroyed")
 
-		if node == nil then
-			-- packet is inside unloaded area?
-			packet = handle_suspend(packet, hash, c)
-		elseif def == nil then
-			debug("packet @"..hash.." nullified inside a non-bearer")
-			c("on_packet_destroyed", packet, hash, node)
-			packet.volume = 0
-		else
-			handle_single_packet(
-				packet, hash, node, def, enqueue_at, try_insert_volume)
+	local get_node_and_def = get_member2(INodeDefLookup, "get_node_and_def")
+
+
+
+	local run_packet_batch = function(packetkeys, enqueue_at, try_insert_volume)
+		for i, key in ipairs(packetkeys) do
+			local packet = packetmap[key]
+			local hash = key
+			local node, def = get_node_and_def(packet)
+
+			-- some sanity checks on internal structure.
+			checkpacket(packet, hash)
+
+			if node == nil then
+				-- packet is inside unloaded area?
+				packet = handle_suspend(packet, hash, on_packet_unloaded)
+			elseif def == nil then
+				debug("packet @"..hash.." nullified inside a non-bearer")
+				on_packet_destroyed(packet, hash, node)
+				packet.volume = 0
+			else
+				handle_single_packet(
+					packet, hash, node, def, enqueue_at, try_insert_volume)
+			end
+
+			-- handle potentially deleting the packet when done,
+			-- for e.g. no volume left
+			handle_delete(packet, key, packetmap)
 		end
-
-		-- handle potentially deleting the packet when done,
-		-- for e.g. no volume left
-		handle_delete(packet, key, packetmap)
 	end
+
+	local IBatchRunner = {
+		run_packet_batch = run_packet_batch,
+	}
+	return IBatchRunner
 end
-i.run_packet_batch = run_packet_batch
+i.new_BatchRunner = new_BatchRunner
 
 
 
