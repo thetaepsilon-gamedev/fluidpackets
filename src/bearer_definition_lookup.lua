@@ -19,7 +19,7 @@ local get_node_or_nil = minetest.get_node_or_nil
 local new_MTNodeDefLookup = function(lookup_definition)
 	assert(type(lookup_definition) == "function")
 
-	local lookup = function(pos, callback)
+	local lookup = function(pos)
 		local node = get_node_or_nil(pos)
 		-- no point trying to load definition for unloaded areas...
 		if not node then return nil, nil end
