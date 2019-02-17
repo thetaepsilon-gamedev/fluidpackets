@@ -60,15 +60,18 @@ local c_suspend = m_suspend.create_suspend_callbacks(chunktable)
 
 
 
-local callbacks = {
-	on_packet_destroyed = destroy,
-	on_escape = escape,
-	lookup_definition = lookup,
-	on_packet_unloaded = c_suspend.on_packet_unloaded,
-	on_packet_load_hint = c_suspend.on_packet_load_hint,
-}
 
-local controller = fluidpackets.fluid_map_controller.mk(callbacks)
+-- create a null object instance of the callbacks,
+-- then selectively override the ones we want.
+-- this way, we remain compatible in future when more are added.
+local c = fluidpackets.types.IBatchRunnerCallbacks.create_null_instance()
+c.on_packet_destroyed = destroy
+c.on_escape = escape
+c.lookup_definition = lookup
+c.on_packet_unloaded = c_suspend.on_packet_unloaded
+c.on_packet_load_hint = c_suspend.on_packet_load_hint
+
+local controller = fluidpackets.fluid_map_controller.mk(c)
 local lbm_hint = m_suspend.create_table_lbm_hint(chunktable, controller.bulk_load)
 -- register an LBM so the packet map wakes up again when reloaded
 minetest.register_lbm({
