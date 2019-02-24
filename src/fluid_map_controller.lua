@@ -47,27 +47,27 @@ local dummy = function() end
 local get_member =
 	_mod.util.callbacks.get_interface_member_(
 		"new_FluidMapController",
-		"IFluidMapControllerCallbacks")
+		"IBatchRunnerCallbacks")
 
 
-local new_FluidMapController = function(IFluidMapControllerCallbacks)
+local new_FluidMapController = function(IBatchRunnerCallbacks)
 	-- start out with an empty packet map.
 	local packetmap = {}
 
 	-- initialise objects used for inserting into and processing the map.
 	local lookup_definition =
-		get_member(IFluidMapControllerCallbacks, "lookup_definition")
+		get_member(IBatchRunnerCallbacks, "lookup_definition")
 	local INodeDefLookup = new_MTNodeDefLookup(lookup_definition)
 
 	local _try_insert_volume =
 		new_VolumeInserter(
-			IFluidMapControllerCallbacks,
+			IBatchRunnerCallbacks,
 			INodeDefLookup,
 			packetmap).try_insert_volume
 
 	local run_packet_batch =
 		new_BatchRunner(
-			IFluidMapControllerCallbacks,
+			IBatchRunnerCallbacks,
 			INodeDefLookup,
 			packetmap).run_packet_batch
 
