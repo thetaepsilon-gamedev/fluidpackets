@@ -61,15 +61,21 @@ local c_suspend = m_suspend.create_suspend_callbacks(chunktable)
 
 
 
--- create a null object instance of the callbacks,
--- then selectively override the ones we want.
--- this way, we remain compatible in future when more are added.
-local c = fluidpackets.types.IBatchRunnerCallbacks.create_null_instance()
-c.on_packet_destroyed = destroy
-c.on_escape = escape
-c.lookup_definition = lookup
-c.on_packet_unloaded = c_suspend.on_packet_unloaded
-c.on_packet_load_hint = c_suspend.on_packet_load_hint
+-- Create a null object instance of the "base class" of IBatchRunnerCallbacks.
+-- We then implement the remainder of IBatchRunnerCallbacks
+-- using the suspend table callbacks.
+-- The null object pattern should hopefully get us defaults that won't break anything,
+-- particularly if the contract of the base interface changes in future
+-- (e.g. if new methods get added to it).
+local t = fluidpackets.types
+local base = t.ILookupAndPacketLossCallbacks.create_null_instance()
+base.on_packet_destroyed = destroy
+base.on_escape = escape
+base.lookup_definition = lookup
+
+local c = t.IBatchRunnerCallbacks.implement_from_superclass(base, c_suspend)
+
+
 
 local controller = fluidpackets.fluid_map_controller.mk(c)
 local lbm_hint = m_suspend.create_table_lbm_hint(chunktable, controller.bulk_load)

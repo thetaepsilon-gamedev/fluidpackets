@@ -6,12 +6,49 @@ local m_types =
 
 local sign, verify = m_types.create_simple_type()
 
+local i = {}
+
+
+
+
+
+-- Allow derivation of an IBatchRunnerCallbacks from:
+-- a) a "base" ILookupAndPacketLossCallbacks, and
+-- b) functions for the two methods the base interface does not provide,
+-- namely on_packet_unloaded and on_packet_load_hint
+-- (see doc comments on the null object pattern below).
+local type_ILookupAndPacketLossCallbacks =
+	_mod.types.ILookupAndPacketLossCallbacks
+
+local get_interface_member_ = _mod.util.callbacks.get_interface_member_
+local n = "implement_from_superclass()"
+local get_member_super = get_interface_member_(n, "IBatchRunnerCallbacks")
+local get_member_mixin = get_interface_member_(n, "<mixin type>")
+
+local msg_badtype =
+	n..": expected ILookupAndPacketLossCallbacks as base"
+local super_methods = {"on_packet_destroyed", "on_escape", "lookup_definition"}
+local mixin_methods = {"on_packet_unloaded", "on_packet_load_hint"}
+local implement_from_superclass = function(super, mixin)
+	assert(type_ILookupAndPacketLossCallbacks.is_type(super), msg_badtype)
+
+	local self = {}
+	for i, member in ipairs(super_methods) do
+		self[member] = get_member_super(super, member)
+	end
+	for i, member in ipairs(mixin_methods) do
+		self[member] = get_member_mixin(mixin, member)
+	end
+
+	return sign(self)
+end
+i.implement_from_superclass = implement_from_superclass
+
 
 
 -- Null Object pattern implementation of IBatchRunnerCallbacks.
 -- can be used as a "base class" when not all operations are needed;
 -- the below will do nothing and the most idempotent thing where possible.
-local i = {}
 local create_null_instance = function()
 	local defcallbacks = {
 		-- invoked when a packet *starts a batch* inside a non-bearer.
@@ -61,6 +98,8 @@ end
 i.create_null_instance = create_null_instance
 
 i.is_type = verify
+
+
 
 return i
 
