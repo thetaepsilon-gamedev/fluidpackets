@@ -26,6 +26,9 @@ _mod.util.metatoken = subloader("meta_ref_token.lua")
 _mod.util.tableset = subloader("util_tableset.lua")
 
 _mod.types = {}
+_mod.types.ILookupAndPacketLossCallbacks =
+	subloader("type_ILookupAndPacketLossCallbacks.lua")
+
 _mod.types.IBatchRunnerCallbacks = subloader("type_IBatchRunnerCallbacks.lua")
 
 
