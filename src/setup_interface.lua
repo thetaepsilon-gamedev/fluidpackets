@@ -8,8 +8,7 @@ i.util.bearer_def = _mod.util.bearer_def
 i.util.bearer_helpers = _mod.m.bearer_helpers
 i.callbacks = {}
 i.callbacks.suspend = _mod.m.suspend
-i.types = {}
-i.types.IBatchRunnerCallbacks = _mod.types.IBatchRunnerCallbacks
+i.types = _mod.types
 
 
 
