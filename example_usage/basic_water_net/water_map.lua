@@ -30,10 +30,7 @@ local destroy = function(packet, hash, node)
 	shove_bubble_at(packet, node, v)
 end
 local escape = function(pos, node, volume)
-	local v = tostring(volume)
-	local hash = cf(pos)
-	prn("# packet escaped @"..hash.." volume "..v.."m³")
-	return shove_bubble_at(pos, node, v)
+	return nil
 end
 local lookup = fluidpackets.util.bearer_def.mk_liquid_lookup(water)
 
