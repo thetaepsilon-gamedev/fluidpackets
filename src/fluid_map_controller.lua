@@ -94,7 +94,7 @@ local new_FluidMapController = function(IBatchRunnerCallbacks)
 	end
 	local take_lock = function(owner)
 		assert(
-			locked == nil,
+			__locked == nil,
 			err_concurrent .. tostring(__locked) ..
 			err_concurrent2 .. tostring(owner))
 		__locked = owner or "[unknown]"
